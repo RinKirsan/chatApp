@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+</head>
+<body>
+<h1>Users</h1>
+<table>
+  <thead>
+  <tr>
+    <th>Username</th>
+    <th>Role</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="user : ${users}">
+    <td th:text="${user.username}"></td>
+    <td th:text="${user.role}"></td>
+    <td>
+      <!-- Изменение роли -->
+      <form th:action="@{/admin/users/{id}/role(id=${user.id})}" method="post">
+        <label for="role">Role:</label>
+        <select name="role" id="role">
+          <option value="USER" th:selected="${user.role == 'USER'}">USER</option>
+          <option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option>
+          <option value="TEST" th:selected="${user.role == 'TEST'}">TEST</option>
+        </select>
+        <button type="submit">Change Role</button>
+      </form>
+
+      <!-- Удаление пользователя -->
+      <form th:action="@{/admin/users/{id}(id=${user.id})}" method="post">
+        <input type="hidden" name="_method" value="delete" />
+        <button type="submit">Delete</button>
+      </form>
+
+    </td>
+  </tr>
+  </tbody>
+</table>
+</body>
+</html>
