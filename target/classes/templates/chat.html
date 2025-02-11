@@ -5,17 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebSocket Chat</title>
   <style>
+    /* Стиль для имени пользователя */
     .username {
-      color: #007BFF;
+      color: #007BFF; /* Синий цвет для имени */
+      /*font-weight: bold; /* Жирный шрифт */
     }
+
+    /* Стиль для текстового поля чата */
     #chatArea {
-      white-space: pre-wrap;
+      white-space: pre-wrap; /* Сохраняем переносы строк и пробелы */
+      /*font-family: monospace; /* Моноширинный шрифт для красивого отображения (нифига оно не красивое)*/
     }
   </style>
   <script>
     let socket;
     let lastUsername = null;
 
+    // Функция для подключения к серверу WebSocket
     function connectWebSocket() {
       socket = new WebSocket("ws://localhost:8080/server");
 
@@ -27,21 +33,28 @@
         const message = event.data;
         const chatArea = document.getElementById("chatArea");
 
+        // Разделяем сообщение на имя пользователя и текст
         const separatorIndex = message.indexOf(':');
         const username = message.substring(0, separatorIndex);
-        const text = message.substring(separatorIndex + 1).trim();
+        const text = message.substring(separatorIndex + 1).trim(); // Убираем лишние пробелы
 
-        const tabl = " ";
+        const tabl = " "; //типо табуляция
 
+        // Форматируем сообщение
         let formattedMessage;
         if (username === lastUsername) {
+          // Если сообщение от того же пользователя, показываем только текст с табуляцией
           formattedMessage = `${tabl}${text}\n`;
         } else {
+          // Если сообщение от нового пользователя, показываем имя и текст на новой строке
           formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
         }
 
+        // Добавляем сообщение в текстовое поле
         chatArea.innerHTML += formattedMessage;
         lastUsername = username;
+
+        // Прокрутка вниз
         chatArea.scrollTop = chatArea.scrollHeight;
       };
 
@@ -54,32 +67,22 @@
       };
     }
 
+    // Отправка сообщения на сервер
     function sendMessage() {
       const message = document.getElementById("messageInput").value;
       if (message && socket) {
         socket.send(message);
-        document.getElementById("messageInput").value = '';
+        document.getElementById("messageInput").value = ''; // Очистить поле ввода
       }
     }
 
-    function joinGroup() {
-      const groupName = document.getElementById("groupInput").value;
-      if (groupName && socket) {
-        socket.send("/join " + groupName);
-        document.getElementById("groupInput").value = '';
-      }
-    }
-
-    window.onload = connectWebSocket;
+    window.onload = connectWebSocket; // Подключаемся сразу после загрузки страницы
   </script>
 </head>
 <body>
 <h1>WebSocket Chat</h1>
 <div id="chatArea" contenteditable="false" style="width: 500px; height: 300px; border: 1px solid #ccc; padding: 10px; overflow-y: auto;"></div>
 <br>
-<input type="text" id="groupInput" placeholder="Введите название группы" style="width: 200px;">
-<button onclick="joinGroup()">Присоединиться к группе</button>
-<br><br>
 <input type="text" id="messageInput" placeholder="Введите сообщение" style="width: 400px;">
 <button onclick="sendMessage()">Отправить</button>
 </body>
