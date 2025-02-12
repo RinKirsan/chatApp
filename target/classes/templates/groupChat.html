@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Чат группы: <span th:text="${group.name}"></span></title>
+  <style>
+    .username {
+      color: #007BFF;
+    }
+    #chatArea {
+      white-space: pre-wrap;
+      width: 500px;
+      height: 300px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+    }
+  </style>
+  <script>
+    let socket;
+    let lastUsername = null;
+
+    function connectWebSocket(groupId) {
+      socket = new WebSocket("ws://localhost:8080/server?groupId=" + groupId);
+
+      socket.onopen = function() {
+        console.log("Соединение установлено");
+      };
+
+      socket.onmessage = function(event) {
+        const message = event.data;
+        const chatArea = document.getElementById("chatArea");
+
+        const separatorIndex = message.indexOf(':');
+        const username = message.substring(0, separatorIndex);
+        const text = message.substring(separatorIndex + 1).trim();
+
+        const tabl = " ";
+
+        let formattedMessage;
+        if (username === lastUsername) {
+          formattedMessage = `${tabl}${text}\n`;
+        } else {
+          formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
+        }
+
+        chatArea.innerHTML += formattedMessage;
+        lastUsername = username;
+        chatArea.scrollTop = chatArea.scrollHeight;
+      };
+
+      socket.onclose = function() {
+        console.log("Соединение закрыто");
+      };
+
+      socket.onerror = function(error) {
+        console.log("Ошибка WebSocket: " + error.message);
+      };
+    }
+
+    function sendMessage() {
+      const message = document.getElementById("messageInput").value;
+      if (message && socket) {
+        socket.send(message);
+        document.getElementById("messageInput").value = '';
+      }
+    }
+
+    // Подключаемся к WebSocket при загрузке страницы
+    window.onload = function() {
+      const groupId = new URLSearchParams(window.location.search).get("groupId");
+      if (groupId) {
+        connectWebSocket(groupId);
+      }
+    };
+  </script>
+</head>
+<body>
+<h1>Чат группы: <span th:text="${group.name}"></span></h1>
+<div id="chatArea" contenteditable="false"></div>
+<br>
+<input type="text" id="messageInput" placeholder="Введите сообщение" style="width: 400px;">
+<button onclick="sendMessage()">Отправить</button>
+</body>
+</html>

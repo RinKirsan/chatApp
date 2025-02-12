@@ -42,13 +42,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String groupName = (String) session.getAttributes().get("group");
         if (groupName != null) {
             sendMessageToGroup(groupName, username + ": " + payload);
-        } else {
-            // Если пользователь не в группе, отправляем сообщение всем
-            for (WebSocketSession webSocketSession : sessions.keySet()) {
-                if (webSocketSession.isOpen()) {
-                    webSocketSession.sendMessage(new TextMessage(username + ": " + payload));
-                }
-            }
         }
     }
 
