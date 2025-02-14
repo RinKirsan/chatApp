@@ -21,6 +21,36 @@
     .group-list li {
       margin: 5px 0;
     }
+    .lock-icon {
+      color: red;
+      margin-left: 5px;
+    }
+    /* Стили для модального окна */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 300px;
+      text-align: center;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -60,8 +90,16 @@
     const passwordField = document.getElementById("passwordField");
     passwordField.style.display = this.checked ? 'block' : 'none';
   });
-</script>
 
+  function openPasswordModal(groupId) {
+    document.getElementById("groupIdInput").value = groupId;
+    document.getElementById("passwordModal").style.display = "block";
+  }
+
+  function closePasswordModal() {
+    document.getElementById("passwordModal").style.display = "none";
+  }
+</script>
 
 <!-- Присоединение к существующей группе -->
 <div class="group-list">
@@ -69,15 +107,27 @@
   <ul>
     <li th:each="group : ${allGroups}">
       <span th:text="${group.name}"></span>
-      <form th:action="@{/joinGroup}" method="post" style="display: inline;">
+      <span th:if="${group.isPrivate}" class="lock-icon">🔒</span>
+      <button th:if="${group.isPrivate}" type="button" th:onclick="|openPasswordModal('${group.id}')|">Присоединиться</button>
+      <form th:if="!${group.isPrivate}" th:action="@{/joinGroup}" method="post" style="display: inline;">
         <input type="hidden" name="groupId" th:value="${group.id}">
-        <div th:if="${group.isPrivate}">
-          <input type="password" name="password" placeholder="Пароль">
-        </div>
         <button type="submit">Присоединиться</button>
       </form>
     </li>
   </ul>
+</div>
+
+<!-- Модальное окно для ввода пароля -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closePasswordModal()">&times;</span>
+    <h2>Введите пароль</h2>
+    <form th:action="@{/joinGroup}" method="post">
+      <input type="hidden" id="groupIdInput" name="groupId">
+      <input type="password" name="password" placeholder="Пароль" required>
+      <button type="submit">Войти</button>
+    </form>
+  </div>
 </div>
 
 </body>
