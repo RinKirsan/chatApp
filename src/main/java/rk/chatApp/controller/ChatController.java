@@ -33,34 +33,45 @@ public class ChatController {
     }
 
     @PostMapping("/createGroup")
-    public String createGroup(@AuthenticationPrincipal User user, @RequestParam String groupName) {
-        groupService.createGroup(groupName, user);
+    public String createGroup(@AuthenticationPrincipal User user,
+                              @RequestParam String groupName,
+                              @RequestParam(required = false) String password,
+                              @RequestParam(required = false) boolean isPrivate) {
+        groupService.createGroup(groupName, user, password, isPrivate);
         return "redirect:/chat";
     }
 
     @PostMapping("/joinGroup")
-    public String joinGroup(Principal principal, @RequestParam Long groupId) {
+    public String joinGroup(Principal principal,
+                            @RequestParam Long groupId,
+                            @RequestParam(required = false) String password) {
         if (principal == null) {
             throw new RuntimeException("Пользователь не аутентифицирован");
         }
-        System.out.println("Текущий пользователь: " + principal.getName());
 
-        // Загружаем пользователя из базы по имени
+        // Загружаем пользователя
         User user = userRepository.findByUsername(principal.getName());
         if (user == null) {
             throw new RuntimeException("Пользователь не найден в базе данных");
         }
 
-        System.out.println("Пользователь: " + user.getUsername() + ", ID: " + user.getId());
-        groupService.addUserToGroup(groupId, user);
+        Group group = groupService.getGroupById(groupId)
+                .orElseThrow(() -> new RuntimeException("Группа не найдена"));
 
+        // Если группа приватная, проверяем правильность пароля
+        if (group.isPrivate() && (password == null || !password.equals(group.getPassword()))) {
+            throw new RuntimeException("Неверный пароль для приватной группы");
+        }
+
+        groupService.addUserToGroup(groupId, user);
         return "redirect:/chat";
     }
 
 
 
     @GetMapping("/chat/group/{groupId}")
-    public String groupChat(@PathVariable Long groupId, Model model) {
+    public String groupChat(@PathVariable Long groupId,
+                            Model model) {
         // Получаем информацию о группе
         Group group = groupService.getGroupById(groupId)
                 .orElseThrow(() -> new RuntimeException("Группа не найдена"));

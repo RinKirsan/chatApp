@@ -41,9 +41,27 @@
   <h2>Создать группу:</h2>
   <form th:action="@{/createGroup}" method="post">
     <input type="text" name="groupName" placeholder="Название группы" required>
+
+    <label>
+      <input type="checkbox" name="isPrivate"> Приватная группа
+    </label>
+
+    <div id="passwordField" style="display: none;">
+      <input type="password" name="password" placeholder="Пароль (если группа приватная)">
+    </div>
+
     <button type="submit">Создать</button>
   </form>
 </div>
+
+<script>
+  // Показать/скрыть поле для пароля при выборе "Приватная группа"
+  document.querySelector('[name="isPrivate"]').addEventListener('change', function() {
+    const passwordField = document.getElementById("passwordField");
+    passwordField.style.display = this.checked ? 'block' : 'none';
+  });
+</script>
+
 
 <!-- Присоединение к существующей группе -->
 <div class="group-list">
@@ -53,10 +71,14 @@
       <span th:text="${group.name}"></span>
       <form th:action="@{/joinGroup}" method="post" style="display: inline;">
         <input type="hidden" name="groupId" th:value="${group.id}">
+        <div th:if="${group.isPrivate}">
+          <input type="password" name="password" placeholder="Пароль">
+        </div>
         <button type="submit">Присоединиться</button>
       </form>
     </li>
   </ul>
 </div>
+
 </body>
 </html>

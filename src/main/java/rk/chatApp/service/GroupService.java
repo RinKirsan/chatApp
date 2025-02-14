@@ -20,14 +20,18 @@ public class GroupService {
     @Autowired
     private GroupMemberRepository groupMemberRepository;
 
-    public Group createGroup(String name, User creator) {
+    public Group createGroup(String name, User creator, String password, boolean isPrivate) {
         Group group = new Group();
         group.setName(name);
+        group.setPrivate(isPrivate);
+        if (isPrivate && password != null && !password.isEmpty()) {
+            group.setPassword(password);
+        }
         group = groupRepository.save(group);
-
         addUserToGroup(group.getId(), creator);
         return group;
     }
+
 
     public void addUserToGroup(Long groupId, User user) {
         if (user == null || user.getId() == null) {

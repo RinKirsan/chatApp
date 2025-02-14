@@ -13,6 +13,12 @@ public class Group {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(nullable = true)
+    private String password;
+
+    @Column(nullable = false)
+    private boolean isPrivate;
+
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<GroupMember> members;
 
@@ -39,5 +45,21 @@ public class Group {
 
     public void setMembers(Set<GroupMember> members) {
         this.members = members;
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
