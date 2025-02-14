@@ -22,13 +22,15 @@
     let lastUsername = null;
 
     function connectWebSocket(groupId) {
+      console.log("Попытка подключения к WebSocket, groupId: " + groupId);
       socket = new WebSocket("ws://localhost:8080/server?groupId=" + groupId);
 
       socket.onopen = function() {
-        console.log("Соединение установлено");
+        console.log("WebSocket соединение установлено.");
       };
 
       socket.onmessage = function(event) {
+        console.log("Получено сообщение: " + event.data);
         const message = event.data;
         const chatArea = document.getElementById("chatArea");
 
@@ -51,7 +53,7 @@
       };
 
       socket.onclose = function() {
-        console.log("Соединение закрыто");
+        console.log("WebSocket соединение закрыто.");
       };
 
       socket.onerror = function(error) {
@@ -62,6 +64,7 @@
     function sendMessage() {
       const message = document.getElementById("messageInput").value;
       if (message && socket) {
+        console.log("Отправка сообщения: " + message);
         socket.send(message);
         document.getElementById("messageInput").value = '';
       }
@@ -69,12 +72,18 @@
 
     // Подключаемся к WebSocket при загрузке страницы
     window.onload = function() {
-      const groupId = new URLSearchParams(window.location.search).get("groupId");
+      console.log("Страница загружена, инициализация WebSocket...");
+      const pathParts = window.location.pathname.split('/');
+      const groupId = pathParts[pathParts.length - 1];
       if (groupId) {
+        console.log("Найден groupId: " + groupId);
         connectWebSocket(groupId);
+      } else {
+        console.log("groupId не найден в URL");
       }
     };
   </script>
+
 </head>
 <body>
 <h1>Чат группы: <span th:text="${group.name}"></span></h1>
