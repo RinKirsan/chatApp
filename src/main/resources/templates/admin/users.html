@@ -2,20 +2,10 @@
 <html>
 <head>
   <title>Admin Panel</title>
-  <style>
-    .search-input {
-      margin-bottom: 10px;
-    }
-  </style>
 </head>
 <body>
 <h1>Users</h1>
-
-<!-- Поле для поиска по Username -->
-<label for="searchUsername" class="search-input">Search by Username:</label>
-<input type="text" id="searchUsername" onkeyup="filterUsers()" placeholder="Search by Username">
-
-<table id="userTable">
+<table>
   <thead>
   <tr>
     <th>Username</th>
@@ -44,30 +34,10 @@
         <input type="hidden" name="_method" value="delete" />
         <button type="submit">Delete</button>
       </form>
+
     </td>
   </tr>
   </tbody>
 </table>
-
-<script>
-  function filterUsers() {
-    const input = document.getElementById('searchUsername');
-    const filter = input.value.toUpperCase();
-    const table = document.getElementById('userTable');
-    const rows = table.getElementsByTagName('tr');
-
-    for (let i = 1; i < rows.length; i++) {  // Начинаем с 1, чтобы пропустить заголовок таблицы
-      const cells = rows[i].getElementsByTagName('td');
-      const username = cells[0].textContent || cells[0].innerText;
-
-      if (username.toUpperCase().indexOf(filter) > -1) {
-        rows[i].style.display = "";
-      } else {
-        rows[i].style.display = "none";
-      }
-    }
-  }
-</script>
-
 </body>
 </html>
