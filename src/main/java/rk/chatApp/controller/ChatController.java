@@ -26,9 +26,13 @@ public class ChatController {
 
     @GetMapping("/chat")
     public String chatPage(@AuthenticationPrincipal User user, Model model) {
-        // Получаем список групп пользователя и всех групп
-        model.addAttribute("userGroups", groupService.getGroupsByUser(user));
-        model.addAttribute("allGroups", groupService.getAllGroups());
+        // Получаем список групп пользователя
+        var userGroups = groupService.getGroupsByUser(user);
+        // Получаем список всех групп и исключаем те, в которых пользователь уже состоит
+        var allGroups = groupService.getAllGroups();
+        allGroups.removeAll(userGroups);
+        model.addAttribute("userGroups", userGroups);
+        model.addAttribute("allGroups", allGroups);
         return "chat";
     }
 
