@@ -23,11 +23,14 @@
 
     function connectWebSocket(groupId) {
       console.log("Попытка подключения к WebSocket, groupId: " + groupId);
-      //socket = new WebSocket("ws://localhost:8080/server?groupId=" + groupId);
       socket = new WebSocket("ws://localhost:8080/server");
 
       socket.onopen = function() {
         console.log("WebSocket соединение установлено.");
+        const groupName = groupId;
+        if (groupName && socket) {
+          socket.send("/join " + groupName);
+        }
       };
 
       socket.onmessage = function(event) {
