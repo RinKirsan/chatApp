@@ -20,17 +20,18 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/", "/home", "/register", "/login").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admintools").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .formLogin((form) -> form
                         .loginPage("/login")
-                        .successHandler((request, response, authentication) -> {
-                            System.out.println("Аутентифицирован: " + authentication.getName());
-                            response.sendRedirect("/chat");
-                        })
                         .permitAll()
                 )
-                .logout((logout) -> logout.permitAll());
+                .logout((logout) -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/home")
+                        .permitAll()
+                );
 
         return http.build();
     }

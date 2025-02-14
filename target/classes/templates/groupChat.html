@@ -22,11 +22,10 @@
     let lastUsername = null;
 
     function connectWebSocket(groupId) {
-      console.log("Попытка подключения к WebSocket, groupId: " + groupId);
       socket = new WebSocket("ws://localhost:8080/server");
 
       socket.onopen = function() {
-        console.log("WebSocket соединение установлено.");
+        console.log("Соединение установлено.");
         const groupName = groupId;
         if (groupName && socket) {
           socket.send("/join " + groupName);
@@ -34,7 +33,6 @@
       };
 
       socket.onmessage = function(event) {
-        console.log("Получено сообщение: " + event.data);
         const message = event.data;
         const chatArea = document.getElementById("chatArea");
 
@@ -68,7 +66,6 @@
     function sendMessage() {
       const message = document.getElementById("messageInput").value;
       if (message && socket) {
-        console.log("Отправка сообщения: " + message);
         socket.send(message);
         document.getElementById("messageInput").value = '';
       }
@@ -80,10 +77,8 @@
       const pathParts = window.location.pathname.split('/');
       const groupId = pathParts[pathParts.length - 1];
       if (groupId) {
-        console.log("Найден groupId: " + groupId);
         connectWebSocket(groupId);
       } else {
-        console.log("groupId не найден в URL");
       }
     };
   </script>
