@@ -62,9 +62,16 @@
   <ul>
     <li th:each="group : ${userGroups}">
       <a th:href="@{/chat/group/{id}(id=${group.id})}" th:text="${group.name}"></a>
+      <form th:action="@{/leaveGroup}" method="post" style="display: inline;">
+        <input type="hidden" name="groupId" th:value="${group.id}">
+        <input type="hidden" name="userId" th:value="${#authentication.principal.id}">
+        <button type="submit">Выйти</button>
+      </form>
+
     </li>
   </ul>
 </div>
+
 
 <!-- Создание новой группы -->
 <div>

@@ -82,4 +82,12 @@ public class ChatController {
         model.addAttribute("group", group);
         return "groupChat";
     }
+
+    @PostMapping("/leaveGroup")
+    public String leaveGroup(@RequestParam Long groupId, @RequestParam Long userId) {
+        groupService.removeUserFromGroup(groupId, userId);
+        return "redirect:/chat";
+    }
+
+
 }
