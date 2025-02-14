@@ -28,33 +28,22 @@
 
 <!-- Список групп пользователя -->
 <div class="group-list">
-  <h2>Все группы:</h2>
+  <h2>Ваши группы:</h2>
   <ul>
-    <li th:each="group : ${allGroups}">
-      <span th:text="${group.name}"></span>
-      <form th:action="@{/joinGroup}" method="post" style="display: inline;">
-        <input type="hidden" name="groupId" th:value="${group.id}">
-        <!-- Если группа приватная, добавляем поле для ввода пароля -->
-        <div th:if="${group.password != null}">
-          <input type="password" name="password" placeholder="Введите пароль" required>
-        </div>
-        <button type="submit">Присоединиться</button>
-      </form>
+    <li th:each="group : ${userGroups}">
+      <a th:href="@{/chat/group/{id}(id=${group.id})}" th:text="${group.name}"></a>
     </li>
   </ul>
 </div>
-
 
 <!-- Создание новой группы -->
 <div>
   <h2>Создать группу:</h2>
   <form th:action="@{/createGroup}" method="post">
     <input type="text" name="groupName" placeholder="Название группы" required>
-    <input type="password" name="password" placeholder="Пароль (опционально)">
     <button type="submit">Создать</button>
   </form>
 </div>
-
 
 <!-- Присоединение к существующей группе -->
 <div class="group-list">
