@@ -5,26 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Чат</title>
   <style>
+    /* Основной стиль для темной темы */
+    body {
+      background-color: #121212;
+      color: #E0E0E0;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    h1, h2 {
+      color: #BB86FC;
+      text-align: center;
+    }
+
+    /* Стили для ссылок */
+    a {
+      color: #03DAC5;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
     .username {
-      color: #007BFF;
+      color: #03DAC5;
     }
     #chatArea {
       white-space: pre-wrap;
     }
     .group-list {
       margin-bottom: 20px;
+      padding-top: 20px;
     }
+
     .group-list ul {
       list-style-type: none;
       padding: 0;
+      margin: 0;
     }
+
     .group-list li {
       margin: 5px 0;
     }
+
     .lock-icon {
       color: red;
       margin-left: 5px;
     }
+
     /* Стили для модального окна */
     .modal {
       display: none;
@@ -36,59 +71,166 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
     }
+
+    /* Контейнер для контента модального окна */
     .modal-content {
-      background-color: white;
+      background-color: #1F1F1F;
       margin: 15% auto;
-      padding: 20px;
+      padding: 30px;
       border: 1px solid #888;
       width: 300px;
       text-align: center;
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
+
+    /* Кнопка закрытия */
     .close {
-      color: #aaa;
-      float: right;
+      color: #BB86FC;
+      position: absolute;
+      top: 10px;
+      right: 10px;
       font-size: 28px;
       font-weight: bold;
       cursor: pointer;
     }
+
+    .close:hover {
+      color: #FF4081;
+    }
+
+    /* Стиль для форм и кнопок */
+    input[type="text"], input[type="password"], button {
+      background-color: #333333;
+      color: #E0E0E0;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 300px;
+      box-sizing: border-box;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, button:focus {
+      outline: none;
+      border-color: #BB86FC;
+    }
+    button {
+      cursor: pointer;
+      transition: background-color 0.3s;
+      max-width: 150px;
+    }
+    button:hover {
+      background-color: #6200EE;
+    }
+    input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    /* Стиль для списка групп */
+    .group-list ul li form {
+      display: inline;
+    }
+
+    /* Стиль для кнопок внутри списка групп */
+    .group-list li button {
+      display: block;
+      margin-top: 10px;
+      width: auto;
+      margin-left: 0;
+    }
+
+    .content-container {
+      border: 1px solid #555;
+      padding: 20px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 600px;
+      background-color: #1F1F1F;
+      overflow: auto;
+      height: calc(100vh - 40px);
+      word-wrap: break-word;
+      overflow-x: hidden;
+    }
+
+    .content-container::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    /* Скрытие поля пароля */
+    #passwordField {
+      display: none;
+    }
   </style>
 </head>
 <body>
-<h1>Тут название</h1>
+<!-- Контейнер для всех элементов -->
+<div class="content-container">
+  <!-- Список групп пользователя -->
+  <div class="group-list">
+    <h2>Ваши группы:</h2>
+    <ul>
+      <li th:each="group : ${userGroups}">
+        <a th:href="@{/chat/group/{id}(id=${group.id})}" th:text="${group.name}"></a>
+        <form th:action="@{/leaveGroup}" method="post" style="display: inline;">
+          <input type="hidden" name="groupId" th:value="${group.id}">
+          <input type="hidden" name="userId" th:value="${#authentication.principal.id}">
+          <button type="submit">Выйти</button>
+        </form>
+      </li>
+    </ul>
+  </div>
 
-<!-- Список групп пользователя -->
-<div class="group-list">
-  <h2>Ваши группы:</h2>
-  <ul>
-    <li th:each="group : ${userGroups}">
-      <a th:href="@{/chat/group/{id}(id=${group.id})}" th:text="${group.name}"></a>
-      <form th:action="@{/leaveGroup}" method="post" style="display: inline;">
-        <input type="hidden" name="groupId" th:value="${group.id}">
-        <input type="hidden" name="userId" th:value="${#authentication.principal.id}">
-        <button type="submit">Выйти</button>
-      </form>
+  <!-- Создание новой группы -->
+  <div>
+    <h2>Создать группу:</h2>
+    <form th:action="@{/createGroup}" method="post">
+      <input type="text" name="groupName" placeholder="Название группы" required>
 
-    </li>
-  </ul>
+      <label>
+        <input type="checkbox" name="isPrivate"> Приватная группа
+      </label>
+
+      <div id="passwordField">
+        <input type="password" name="password" placeholder="Пароль (если группа приватная)">
+      </div>
+
+      <button type="submit">Создать</button>
+    </form>
+  </div>
+
+  <!-- Присоединение к существующей группе -->
+  <div class="group-list">
+    <h2>Все группы:</h2>
+    <ul>
+      <li th:each="group : ${allGroups}">
+        <span th:text="${group.name}"></span>
+        <span th:if="${group.isPrivate}" class="lock-icon">🔒</span>
+        <button th:if="${group.isPrivate}" type="button" th:onclick="|openPasswordModal('${group.id}')|">Присоединиться</button>
+        <form th:if="!${group.isPrivate}" th:action="@{/joinGroup}" method="post" style="display: inline;">
+          <input type="hidden" name="groupId" th:value="${group.id}">
+          <button type="submit">Присоединиться</button>
+        </form>
+      </li>
+    </ul>
+  </div>
 </div>
 
-
-<!-- Создание новой группы -->
-<div>
-  <h2>Создать группу:</h2>
-  <form th:action="@{/createGroup}" method="post">
-    <input type="text" name="groupName" placeholder="Название группы" required>
-
-    <label>
-      <input type="checkbox" name="isPrivate"> Приватная группа
-    </label>
-
-    <div id="passwordField" style="display: none;">
-      <input type="password" name="password" placeholder="Пароль (если группа приватная)">
-    </div>
-
-    <button type="submit">Создать</button>
-  </form>
+<!-- Модальное окно для ввода пароля -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closePasswordModal()">&times;</span>
+    <h2>Введите пароль</h2>
+    <form th:action="@{/joinGroup}" method="post">
+      <input type="hidden" id="groupIdInput" name="groupId">
+      <input type="password" name="password" placeholder="Пароль">
+      <button type="submit">Войти</button>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -107,35 +249,6 @@
     document.getElementById("passwordModal").style.display = "none";
   }
 </script>
-
-<!-- Присоединение к существующей группе -->
-<div class="group-list">
-  <h2>Все группы:</h2>
-  <ul>
-    <li th:each="group : ${allGroups}">
-      <span th:text="${group.name}"></span>
-      <span th:if="${group.isPrivate}" class="lock-icon">🔒</span>
-      <button th:if="${group.isPrivate}" type="button" th:onclick="|openPasswordModal('${group.id}')|">Присоединиться</button>
-      <form th:if="!${group.isPrivate}" th:action="@{/joinGroup}" method="post" style="display: inline;">
-        <input type="hidden" name="groupId" th:value="${group.id}">
-        <button type="submit">Присоединиться</button>
-      </form>
-    </li>
-  </ul>
-</div>
-
-<!-- Модальное окно для ввода пароля -->
-<div id="passwordModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closePasswordModal()">&times;</span>
-    <h2>Введите пароль</h2>
-    <form th:action="@{/joinGroup}" method="post">
-      <input type="hidden" id="groupIdInput" name="groupId">
-      <input type="password" name="password" placeholder="Пароль" required>
-      <button type="submit">Войти</button>
-    </form>
-  </div>
-</div>
 
 </body>
 </html>
