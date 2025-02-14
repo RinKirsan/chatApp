@@ -47,6 +47,28 @@ public class GroupService {
         return groupMemberRepository.existsByGroupIdAndUserId(groupId, userId);
     }
 
+    public void deleteGroup(Long id) {
+        groupRepository.deleteById(id);
+    }
+
+    public void renameGroup(Long id, String newName) {
+        Group group = groupRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Group not found"));
+        group.setName(newName);
+        groupRepository.save(group);
+    }
+
+    public void removeUserFromGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        GroupMember groupMember = groupMemberRepository.findByUserId(userId)
+                .stream()
+                .filter(member -> member.getGroup().getId().equals(groupId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("User not in group"));
+
+        groupMemberRepository.delete(groupMember);
+    }
+
     public List<Group> getGroupsByUser(User user) {
         return groupMemberRepository.findByUser(user)
                 .stream()

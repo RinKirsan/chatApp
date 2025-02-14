@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Groups</title>
+    <style>
+        /* Стиль для раскрывающегося списка */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content input {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+
+        .dropdown-content ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .dropdown-content li {
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dropdown-content button {
+            margin-left: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .dropdown-content button:hover {
+            background-color: darkred;
+        }
+
+        /* Стиль для сортировки */
+        th {
+            cursor: pointer;
+        }
+
+        /* Стиль для формы поиска */
+        .search-input {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>Groups</h1>
+
+<!-- Элементы для поиска и сортировки -->
+<div>
+    <label for="searchGroupId" class="search-input">Search by Group ID:</label>
+    <input type="text" id="searchGroupId" onkeyup="filterGroups('id')" placeholder="Search by Group ID">
+
+    <label for="searchGroupName" class="search-input">Search by Group Name:</label>
+    <input type="text" id="searchGroupName" onkeyup="filterGroups('name')" placeholder="Search by Group Name">
+
+    <label for="sortColumn">Sort By:</label>
+    <select id="sortColumn" onchange="sortTable()">
+        <option value="id">Group ID</option>
+        <option value="name">Group Name</option>
+    </select>
+
+    <label for="sortOrder">Sort Order:</label>
+    <select id="sortOrder" onchange="sortTable()">
+        <option value="asc">Ascending</option>
+        <option value="desc">Descending</option>
+    </select>
+</div>
+
+<table id="groupTable">
+    <thead>
+    <tr>
+        <th onclick="sortTable('id')">Group ID</th>
+        <th onclick="sortTable('name')">Group Name</th>
+        <th>Users</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="group : ${groups}">
+        <td th:text="${group.id}"></td>
+        <td th:text="${group.name}"></td>
+        <td>
+            <div class="dropdown">
+                <button onclick="toggleDropdown()">Users</button>
+                <div class="dropdown-content">
+                    <!-- Поле поиска для пользователей -->
+                    <input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Search users...">
+                    <ul id="userList">
+                        <li th:each="member : ${group.members}">
+                            <span th:text="${member.user.username}"></span>
+                            <form th:action="@{/admin/groups/{groupId}/removeUser(groupId=${group.id})}" method="post">
+                                <input type="hidden" name="userId" th:value="${member.user.id}" />
+                                <button type="submit">Remove</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </td>
+        <td>
+            <!-- Переименование группы -->
+            <form th:action="@{/admin/groups/{id}/rename(id=${group.id})}" method="post">
+                <label for="newName">New Name:</label>
+                <input type="text" name="newName" id="newName" placeholder="Enter new name" required>
+                <button type="submit">Rename group</button>
+            </form>
+
+            <!-- Удаление группы -->
+            <form th:action="@{/admin/groups/{id}(id=${group.id})}" method="post">
+                <input type="hidden" name="_method" value="delete" />
+                <button type="submit">Delete group</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<script>
+    function toggleDropdown() {
+        const dropdownContent = document.querySelector('.dropdown-content');
+        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function filterUsers() {
+        const input = document.getElementById('searchUser');
+        const filter = input.value.toUpperCase();
+        const ul = document.getElementById('userList');
+        const li = ul.getElementsByTagName('li');
+
+        for (let i = 0; i < li.length; i++) {
+            const username = li[i].getElementsByTagName('span')[0];
+            if (username) {
+                const txtValue = username.textContent || username.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    li[i].style.display = "";
+                } else {
+                    li[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    // Функция для фильтрации групп по ID или имени
+    function filterGroups(column) {
+        const input = column === 'id' ? document.getElementById('searchGroupId') : document.getElementById('searchGroupName');
+        const filter = input.value.toUpperCase();
+        const table = document.getElementById('groupTable');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            const groupValue = column === 'id' ? cells[0].textContent : cells[1].textContent;
+
+            if (groupValue.toUpperCase().indexOf(filter) > -1) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
+    }
+
+    function sortTable() {
+        const table = document.getElementById('groupTable');
+        const rows = Array.from(table.getElementsByTagName('tr')).slice(1);
+        const sortColumn = document.getElementById('sortColumn').value;
+        const sortOrder = document.getElementById('sortOrder').value;
+
+        rows.sort((a, b) => {
+            const cellA = a.getElementsByTagName('td')[sortColumn === 'id' ? 0 : 1].innerText;
+            const cellB = b.getElementsByTagName('td')[sortColumn === 'id' ? 0 : 1].innerText;
+
+            if (sortColumn === 'id') {
+                return sortOrder === 'asc' ? cellA - cellB : cellB - cellA;
+            } else {
+                return sortOrder === 'asc' ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            }
+        });
+
+        rows.forEach(row => table.appendChild(row)); // Перемещаем отсортированные строки в таблицу
+    }
+</script>
+</body>
+</html>
