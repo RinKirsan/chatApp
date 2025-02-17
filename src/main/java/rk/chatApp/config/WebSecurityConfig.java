@@ -36,9 +36,6 @@ public class WebSecurityConfig {
                         .logoutSuccessUrl("/home")
                         .permitAll()
                 );
-//                .exceptionHandling((exceptionHandling) -> exceptionHandling
-//                        .accessDeniedHandler(accessDeniedHandler())
-//                );
 
         return http.build();
     }
@@ -48,10 +45,4 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-//    @Bean
-//    public AccessDeniedHandler accessDeniedHandler() {
-//        return (HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) -> {
-//            response.sendRedirect("/error/403");
-//        };
-//    }
 }
