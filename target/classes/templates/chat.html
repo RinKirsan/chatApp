@@ -13,11 +13,8 @@
       margin: 0;
       padding: 0;
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
       height: 100vh;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     h1, h2 {
@@ -37,12 +34,15 @@
     .username {
       color: #03DAC5;
     }
-    #chatArea {
-      white-space: pre-wrap;
-    }
+
     .group-list {
-      margin-bottom: 20px;
-      padding-top: 20px;
+      width: 300px;
+      padding: 20px;
+      border-right: 1px solid #555;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
 
     .group-list ul {
@@ -60,7 +60,7 @@
       margin-left: 5px;
     }
 
-    /* Стили для модального окна */
+    /* Стили для модальных окон */
     .modal {
       display: none;
       position: fixed;
@@ -72,7 +72,6 @@
       background-color: rgba(0, 0, 0, 0.5);
     }
 
-    /* Контейнер для контента модального окна */
     .modal-content {
       background-color: #1F1F1F;
       margin: 15% auto;
@@ -87,7 +86,6 @@
       justify-content: center;
     }
 
-    /* Кнопка закрытия */
     .close {
       color: #BB86FC;
       position: absolute;
@@ -102,7 +100,6 @@
       color: #FF4081;
     }
 
-    /* Стиль для форм и кнопок */
     input[type="text"], input[type="password"], button {
       background-color: #333333;
       color: #E0E0E0;
@@ -130,12 +127,10 @@
       margin-right: 5px;
     }
 
-    /* Стиль для списка групп */
     .group-list ul li form {
       display: inline;
     }
 
-    /* Стиль для кнопок внутри списка групп */
     .group-list li button {
       display: block;
       margin-top: 10px;
@@ -143,39 +138,91 @@
       margin-left: 0;
     }
 
-    .content-container {
-      border: 1px solid #555;
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       padding: 20px;
-      border-radius: 8px;
-      width: 100%;
-      max-width: 600px;
+      overflow: hidden;
+    }
+
+    #chatArea {
+      flex: 1;
+      border: 1px solid #555;
       background-color: #1F1F1F;
-      overflow: auto;
-      height: calc(100vh - 40px);
-      word-wrap: break-word;
-      overflow-x: hidden;
+      padding: 15px;
+      margin-bottom: 20px;
+      overflow-y: auto;
+      color: #E0E0E0;
+      border-radius: 8px;
+      white-space: pre-wrap;
     }
 
-    .content-container::-webkit-scrollbar {
-      width: 0;
-      height: 0;
+    .input-container {
+      display: flex;
+      gap: 10px;
     }
 
-    /* Скрытие поля пароля */
+    .input-container input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      background-color: #333;
+      color: #E0E0E0;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+
+    .input-container button {
+      background-color: #6200EE;
+      color: #E0E0E0;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .input-container button:hover {
+      background-color: #BB86FC;
+    }
+
     #passwordField {
       display: none;
+    }
+
+    /* Стиль для круглой кнопки с плюсиком */
+    .add-group-button {
+      position: relative;
+      margin-top: 20px;
+      width: 50px;
+      height: 50px;
+      background-color: #6200EE;
+      color: #E0E0E0;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s;
+    }
+
+    .add-group-button:hover {
+      background-color: #BB86FC;
     }
   </style>
 </head>
 <body>
 <!-- Контейнер для всех элементов -->
-<div class="content-container">
+<div class="group-list">
   <!-- Список групп пользователя -->
-  <div class="group-list">
+  <div>
     <h2>Ваши группы:</h2>
     <ul>
       <li th:each="group : ${userGroups}">
-        <a th:href="@{/chat/group/{id}(id=${group.id})}" th:text="${group.name}"></a>
+        <a th:href="@{/chat(selectedGroupId=${group.id})}" th:text="${group.name}"></a>
         <form th:action="@{/leaveGroup}" method="post" style="display: inline;">
           <input type="hidden" name="groupId" th:value="${group.id}">
           <input type="hidden" name="userId" th:value="${#authentication.principal.id}">
@@ -185,26 +232,10 @@
     </ul>
   </div>
 
-  <!-- Создание новой группы -->
-  <div>
-    <h2>Создать группу:</h2>
-    <form th:action="@{/createGroup}" method="post">
-      <input type="text" name="groupName" placeholder="Название группы" required>
 
-      <label>
-        <input type="checkbox" name="isPrivate"> Приватная группа
-      </label>
-
-      <div id="passwordField">
-        <input type="password" name="password" placeholder="Пароль (если группа приватная)">
-      </div>
-
-      <button type="submit">Создать</button>
-    </form>
-  </div>
-
+  <button class="add-group-button" onclick="openCreateGroupModal()">+</button>
   <!-- Присоединение к существующей группе -->
-  <div class="group-list">
+  <div>
     <h2>Все группы:</h2>
     <ul>
       <li th:each="group : ${allGroups}">
@@ -217,6 +248,34 @@
         </form>
       </li>
     </ul>
+  </div>
+</div>
+
+<!-- Контейнер для чата -->
+<div class="chat-container" th:if="${selectedGroup != null}">
+  <h1>Чат группы: <span th:text="${selectedGroup.name}"></span></h1>
+  <div id="chatArea" contenteditable="false"></div>
+  <div class="input-container">
+    <input type="text" id="messageInput" placeholder="Введите сообщение">
+    <button onclick="sendMessage()">Отправить</button>
+  </div>
+</div>
+
+<!-- Модальное окно для создания группы -->
+<div id="createGroupModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeCreateGroupModal()">&times;</span>
+    <h2>Создать группу</h2>
+    <form th:action="@{/createGroup}" method="post">
+      <input type="text" name="groupName" placeholder="Название группы" required>
+      <label>
+        <input type="checkbox" name="isPrivate"> Приватная группа
+      </label>
+      <div id="passwordField">
+        <input type="password" name="password" placeholder="Пароль (если группа приватная)">
+      </div>
+      <button type="submit">Создать</button>
+    </form>
   </div>
 </div>
 
@@ -248,7 +307,77 @@
   function closePasswordModal() {
     document.getElementById("passwordModal").style.display = "none";
   }
-</script>
 
+  function openCreateGroupModal() {
+    document.getElementById("createGroupModal").style.display = "block";
+  }
+
+  function closeCreateGroupModal() {
+    document.getElementById("createGroupModal").style.display = "none";
+  }
+
+  let socket;
+  let lastUsername = null;
+
+  function connectWebSocket(groupId) {
+    socket = new WebSocket("wss://drunkenly-fortified-gerenuk.cloudpub.ru:443/server");
+
+    socket.onopen = function() {
+      console.log("Соединение установлено.");
+      const groupName = groupId;
+      if (groupName && socket) {
+        socket.send("/join " + groupName);
+      }
+    };
+
+    socket.onmessage = function(event) {
+      const message = event.data;
+      const chatArea = document.getElementById("chatArea");
+
+      const separatorIndex = message.indexOf(':');
+      const username = message.substring(0, separatorIndex);
+      const text = message.substring(separatorIndex + 1).trim();
+
+      const tabl = "  ";
+
+      let formattedMessage;
+      if (username === lastUsername) {
+        formattedMessage = `${tabl}${text}\n`;
+      } else {
+        formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
+      }
+
+      chatArea.innerHTML += formattedMessage;
+      lastUsername = username;
+      chatArea.scrollTop = chatArea.scrollHeight;
+    };
+
+    socket.onclose = function() {
+      console.log("WebSocket соединение закрыто.");
+    };
+
+    socket.onerror = function(error) {
+      console.log("Ошибка WebSocket: " + error.message);
+    };
+  }
+
+  function sendMessage() {
+    const message = document.getElementById("messageInput").value;
+    if (message && socket) {
+      socket.send(message);
+      document.getElementById("messageInput").value = '';
+    }
+  }
+
+  // Подключаемся к WebSocket при загрузке страницы
+  window.onload = function() {
+    console.log("Страница загружена, инициализация WebSocket...");
+    const pathParts = window.location.pathname.split('/');
+    const groupId = pathParts[pathParts.length - 1];
+    if (groupId) {
+      connectWebSocket(groupId);
+    }
+  };
+</script>
 </body>
 </html>

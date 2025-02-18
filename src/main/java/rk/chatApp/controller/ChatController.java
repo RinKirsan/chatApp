@@ -25,15 +25,25 @@ public class ChatController {
     private UserRepository userRepository;
 
     @GetMapping("/chat")
-    public String chatPage(@AuthenticationPrincipal User user, Model model) {
+    public String chatPage(@AuthenticationPrincipal User user,
+                           @RequestParam(required = false) Long selectedGroupId, // Добавляем параметр для выбранной группы
+                           Model model) {
         // Получаем список групп пользователя
         var userGroups = groupService.getGroupsByUser(user);
         // Получаем список всех групп и исключаем те, в которых пользователь уже состоит
         var allGroups = groupService.getAllGroups();
         allGroups.removeAll(userGroups);
+
+        // Если выбрана группа, добавляем её в модель
+        if (selectedGroupId != null) {
+            Group selectedGroup = groupService.getGroupById(selectedGroupId)
+                    .orElseThrow(() -> new RuntimeException("Группа не найдена"));
+            model.addAttribute("selectedGroup", selectedGroup);
+        }
+
         model.addAttribute("userGroups", userGroups);
         model.addAttribute("allGroups", allGroups);
-        return "chat";
+        return "chat"; // Возвращаем имя шаблона (chat.html)
     }
 
     @PostMapping("/createGroup")
@@ -68,26 +78,13 @@ public class ChatController {
         }
 
         groupService.addUserToGroup(groupId, user);
-        return "redirect:/chat";
+        return "redirect:/chat?selectedGroupId=" + groupId; // Перенаправляем с выбранной группой
     }
 
-
-
-    @GetMapping("/chat/group/{groupId}")
-    public String groupChat(@PathVariable Long groupId,
-                            Model model) {
-        // Получаем информацию о группе
-        Group group = groupService.getGroupById(groupId)
-                .orElseThrow(() -> new RuntimeException("Группа не найдена"));
-        model.addAttribute("group", group);
-        return "groupChat";
-    }
 
     @PostMapping("/leaveGroup")
     public String leaveGroup(@RequestParam Long groupId, @RequestParam Long userId) {
         groupService.removeUserFromGroup(groupId, userId);
         return "redirect:/chat";
     }
-
-
 }
