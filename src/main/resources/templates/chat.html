@@ -320,8 +320,8 @@
   let lastUsername = null;
 
   function connectWebSocket(groupId) {
-    //socket = new WebSocket("wss://drunkenly-fortified-gerenuk.cloudpub.ru:443/server");
     socket = new WebSocket("ws://localhost:8080/server");
+    //socket = new WebSocket("ws://46.16.36.171:8080/server");
 
     socket.onopen = function() {
       console.log("Соединение установлено.");

@@ -320,8 +320,8 @@
   let lastUsername = null;
 
   function connectWebSocket(groupId) {
-    //socket = new WebSocket("wss://drunkenly-fortified-gerenuk.cloudpub.ru:443/server");
     socket = new WebSocket("ws://localhost:8080/server");
+    //socket = new WebSocket("ws://46.16.36.171:8080/server");
 
     socket.onopen = function() {
       console.log("Соединение установлено.");
@@ -370,12 +370,28 @@
     }
   }
 
+  async function loadMessages(groupId) {
+    const response = await fetch(`/api/messages/${groupId}`);
+    const messages = await response.json();
+    const chatArea = document.getElementById("chatArea");
+    chatArea.innerHTML = '';
+
+    messages.forEach(msg => {
+      const formatted = `<span class="username">${msg.sender}:</span>\n  ${msg.content}\n`;
+      chatArea.innerHTML += formatted;
+    });
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+
   // Подключаемся к WebSocket при загрузке страницы
   window.onload = function() {
     console.log("Страница загружена, инициализация WebSocket...");
     const pathParts = window.location.pathname.split('/');
     const groupId = pathParts[pathParts.length - 1];
     if (groupId) {
+      loadMessages(groupId);
       connectWebSocket(groupId);
     }
   };
