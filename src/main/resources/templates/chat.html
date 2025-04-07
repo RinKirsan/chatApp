@@ -319,15 +319,15 @@
   let socket;
   let lastUsername = null;
 
-  function connectWebSocket(groupId) {
-    socket = new WebSocket("ws://localhost:8080/server");
+  function connectWebSocket(cncChat) {
     //socket = new WebSocket("ws://46.16.36.171:8080/server");
+    socket = new WebSocket("ws://localhost:8080/server");
 
     socket.onopen = function() {
       console.log("Соединение установлено.");
-      const groupName = groupId;
-      if (groupName && socket) {
-        socket.send("/join " + groupName);
+      if (cncChat && socket) {
+        console.log(cncChat);
+        socket.send("/join " + cncChat);
       }
     };
 
@@ -373,11 +373,8 @@
   // Подключаемся к WebSocket при загрузке страницы
   window.onload = function() {
     console.log("Страница загружена, инициализация WebSocket...");
-    const pathParts = window.location.pathname.split('/');
-    const groupId = pathParts[pathParts.length - 1];
-    if (groupId) {
-      connectWebSocket(groupId);
-    }
+    const cncChat = "chat";
+    connectWebSocket(cncChat);
   };
 </script>
 </body>

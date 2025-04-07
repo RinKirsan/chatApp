@@ -33,26 +33,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         // Обработка команд (например, присоединение к группе)
         if (payload.startsWith("/join ")) {
-            String groupName = payload.substring(6).trim();
-            joinGroup(session, groupName);
+            String cncChat = "chat";
+            joinGroup(session, cncChat);
             return;
         }
-
         // Отправка сообщения в группу
-        String groupName = (String) session.getAttributes().get("group");
-        if (groupName != null) {
-            sendMessageToGroup(groupName, username + ": " + payload);
-        }
+        String cncChat = "chat";
+        sendMessageToGroup(cncChat, username + ": " + payload);
+
     }
 
-    private void joinGroup(WebSocketSession session, String groupName) {
-        session.getAttributes().put("group", groupName);
-        groups.computeIfAbsent(groupName, k -> ConcurrentHashMap.newKeySet()).add(session);
-        System.out.println("Пользователь " + sessions.get(session) + " присоединился к группе " + groupName);
+    private void joinGroup(WebSocketSession session, String cncChat) {
+        session.getAttributes().put("group", cncChat);
+        groups.computeIfAbsent(cncChat, k -> ConcurrentHashMap.newKeySet()).add(session);
+        System.out.println("Пользователь " + sessions.get(session) + " присоединился к группе " + cncChat);
     }
 
-    private void sendMessageToGroup(String groupName, String message) throws IOException {
-        Set<WebSocketSession> groupSessions = groups.get(groupName);
+    private void sendMessageToGroup(String cncChat, String message) throws IOException {
+        Set<WebSocketSession> groupSessions = groups.get(cncChat);
         if (groupSessions != null) {
             for (WebSocketSession webSocketSession : groupSessions) {
                 if (webSocketSession.isOpen()) {
@@ -72,3 +70,4 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         System.out.println("Клиент отключился: " + session.getId() + " (пользователь " + username + ")");
     }
 }
+
