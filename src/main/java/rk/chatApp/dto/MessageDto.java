@@ -9,19 +9,20 @@ public class MessageDto {
     private LocalDateTime timestamp;
     private String username;
     private Long groupId;
+    private boolean showUsername;
 
     public MessageDto() {
     }
 
-    public MessageDto(Message message) {
+    public MessageDto(Message message, boolean showUsername) {
         this.id = message.getId();
         this.content = message.getContent();
         this.timestamp = message.getTimestamp();
         this.username = message.getUser().getUsername();
         this.groupId = message.getGroup().getId();
+        this.showUsername = showUsername;
     }
 
-    // Геттеры и сеттеры
     public Long getId() {
         return id;
     }
@@ -60,5 +61,9 @@ public class MessageDto {
 
     public void setGroupId(Long groupId) {
         this.groupId = groupId;
+    }
+
+    public boolean isShowUsername() {
+        return showUsername;
     }
 }

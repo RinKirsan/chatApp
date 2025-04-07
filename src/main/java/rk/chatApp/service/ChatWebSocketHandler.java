@@ -1,5 +1,6 @@
 package rk.chatApp.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -11,6 +12,8 @@ import rk.chatApp.repository.MessageRepository;
 import rk.chatApp.repository.UserRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
     private static final Map<WebSocketSession, String> sessions = new ConcurrentHashMap<>();
     private static final Map<String, Set<WebSocketSession>> groups = new ConcurrentHashMap<>();
+    private static final Map<String, String> lastUsernames = new ConcurrentHashMap<>();
 
     @Autowired
     private UserRepository userRepository;
@@ -43,25 +47,40 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String username = sessions.get(session);
         String payload = message.getPayload();
 
-        // Обработка команд
         if (payload.startsWith("/join ")) {
             String groupId = payload.substring(6).trim();
             joinGroup(session, groupId);
             return;
         }
 
-        // Отправка сообщений в формате "groupId:message"
         String[] parts = payload.split(":", 2);
         if (parts.length == 2) {
             String groupId = parts[0];
             String messageText = parts[1];
 
-            // Сохраняем сообщение в базе данных
-            User user = userRepository.findByUsername(username);
-            groupService.saveMessage(Long.parseLong(groupId), user.getId(), messageText);
+            // Создаем структурированный JSON объект
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> messageData = new HashMap<>();
+            messageData.put("groupId", groupId);
+            messageData.put("username", username);
+            messageData.put("content", messageText);
+            messageData.put("timestamp", LocalDateTime.now().toString());
 
-            // Отправляем сообщение в группу
-            sendMessageToGroup(groupId, username + ": " + messageText);
+            // Определяем нужно ли показывать имя пользователя
+            String lastUser = lastUsernames.get(groupId);
+            messageData.put("showUsername", !username.equals(lastUser));
+            lastUsernames.put(groupId, username);
+
+            String jsonMessage = mapper.writeValueAsString(messageData);
+
+            // Сохраняем сообщение
+            User user = userRepository.findByUsername(username);
+            if (user != null) {
+                groupService.saveMessage(Long.parseLong(groupId), user.getId(), messageText);
+            }
+
+            // Отправляем JSON всем участникам группы
+            sendMessageToGroup(groupId, jsonMessage);
         }
     }
 

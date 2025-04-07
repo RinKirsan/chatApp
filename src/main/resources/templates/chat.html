@@ -31,9 +31,6 @@
       text-decoration: underline;
     }
 
-    .username {
-      color: #03DAC5;
-    }
 
     .group-list {
       width: 300px;
@@ -212,6 +209,98 @@
     .add-group-button:hover {
       background-color: #BB86FC;
     }
+
+    .message-group {
+      margin-bottom: 10px;
+    }
+
+    .message-group .username {
+      color: #03DAC5;
+      font-weight: bold;
+      display: block;
+    }
+
+    .message {
+      margin-left: 20px;
+      padding: 5px 0;
+      white-space: pre-wrap;
+    }
+
+    .message:not(:last-child) {
+      border-bottom: 1px solid #333;
+    }
+
+    .message-container {
+      margin-bottom: 12px;
+      max-width: 80%;
+      width: fit-content;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .message-bubble {
+      position: relative;
+      padding: 10px 15px;
+      border-radius: 18px;
+      word-wrap: break-word;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      margin-top: 4px;
+    }
+
+    .message-time {
+      display: block;
+      text-align: right;
+      font-size: 0.7em;
+      color: rgba(255,255,255,0.6);
+      margin-top: 4px;
+    }
+    
+    .username {
+      color: #03DAC5;
+      font-weight: bold;
+      margin-bottom: 2px;
+      display: block;
+      text-align: left;
+    }
+
+    .other-message .message-bubble {
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      margin-right: auto;
+    }
+
+    .my-message .message-bubble {
+      background-color: #0066cc;
+      color: white;
+      margin-left: auto;
+    }
+
+    .my-message .message-bubble::after {
+      border-top-color: #0066cc;
+      right: auto;
+      left: -8px;
+      transform: rotate(20deg);
+    }
+
+    .my-message .message-time {
+      right: auto;
+      left: 12px;
+    }
+    .message-content {
+      display: block;
+      margin-left: 20px;
+      white-space: pre-wrap;
+    }
+    .message-group {
+      margin-bottom: 12px;
+      border-left: 2px solid #03DAC5;
+      padding-left: 8px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
 <body>
@@ -292,7 +381,7 @@
   </div>
 </div>
 
-<script>
+<script th:inline="javascript">
   // Показать/скрыть поле для пароля при выборе "Приватная группа"
   document.querySelector('[name="isPrivate"]').addEventListener('change', function() {
     const passwordField = document.getElementById("passwordField");
@@ -333,25 +422,41 @@
     };
 
     socket.onmessage = function(event) {
-      const message = event.data;
-      const chatArea = document.getElementById("chatArea");
+      try {
+        const message = JSON.parse(event.data);
+        const chatArea = document.getElementById("chatArea");
+        const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+        const isCurrentUser = message.username === currentUser;
 
-      const separatorIndex = message.indexOf(':');
-      const username = message.substring(0, separatorIndex);
-      const text = message.substring(separatorIndex + 1).trim();
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
 
-      const tabl = "  ";
+        // Показываем имя пользователя если:
+        // 1. Это не текущий пользователь ИЛИ
+        // 2. Это текущий пользователь, но нужно показать имя (showUsername = true)
+        if ((!isCurrentUser || message.showUsername)) {
+          const usernameDiv = document.createElement("div");
+          usernameDiv.className = "username";
+          usernameDiv.textContent = message.username;
+          messageDiv.appendChild(usernameDiv);
+        }
 
-      let formattedMessage;
-      if (username === lastUsername) {
-        formattedMessage = `${tabl}${text}\n`;
-      } else {
-        formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
+        const bubbleDiv = document.createElement("div");
+        bubbleDiv.className = "message-bubble";
+        bubbleDiv.textContent = message.content;
+
+        const timeDiv = document.createElement("div");
+        timeDiv.className = "message-time";
+        const msgTime = new Date(message.timestamp || Date.now());
+        timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+        bubbleDiv.appendChild(timeDiv);
+        messageDiv.appendChild(bubbleDiv);
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      } catch (e) {
+        console.error("Error processing message:", e);
       }
-
-      chatArea.innerHTML += formattedMessage;
-      lastUsername = username;
-      chatArea.scrollTop = chatArea.scrollHeight;
     };
 
     socket.onclose = function() {
@@ -364,10 +469,12 @@
   }
 
   function sendMessage() {
-    const message = document.getElementById("messageInput").value;
+    const messageInput = document.getElementById("messageInput");
+    const message = messageInput.value.trim();
+
     if (message && socket && currentGroupId) {
       socket.send(currentGroupId + ":" + message);
-      document.getElementById("messageInput").value = '';
+      messageInput.value = '';
     }
   }
 
@@ -383,21 +490,49 @@
 
   function loadMessages(groupId) {
     fetch(`/api/messages?groupId=${groupId}`)
-            .then(response => {
-              if (!response.ok) throw new Error('Network response was not ok');
-              return response.json();
-            })
+            .then(response => response.json())
             .then(messages => {
               const chatArea = document.getElementById("chatArea");
+              chatArea.innerHTML = '';
+
+              let lastUsername = null;
+              const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+
               messages.forEach(msg => {
-                const formattedMessage =
-                        `<span class="username">${msg.username}:</span>\n  ${msg.content}\n`;
-                chatArea.innerHTML += formattedMessage;
+                const isCurrentUser = msg.username === currentUser;
+                const messageDiv = document.createElement("div");
+                messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+
+                // Показываем имя пользователя если:
+                // 1. Это не текущий пользователь ИЛИ
+                // 2. Это текущий пользователь, но предыдущее сообщение было от другого
+                if ((!isCurrentUser || msg.username !== lastUsername)) {
+                  const usernameDiv = document.createElement("div");
+                  usernameDiv.className = "username";
+                  usernameDiv.textContent = msg.username;
+                  messageDiv.appendChild(usernameDiv);
+                }
+
+                lastUsername = msg.username;
+
+                const bubbleDiv = document.createElement("div");
+                bubbleDiv.className = "message-bubble";
+                bubbleDiv.textContent = msg.content;
+
+                const timeDiv = document.createElement("div");
+                timeDiv.className = "message-time";
+                const msgTime = new Date(msg.timestamp);
+                timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+                bubbleDiv.appendChild(timeDiv);
+                messageDiv.appendChild(bubbleDiv);
+                chatArea.appendChild(messageDiv);
               });
+
               chatArea.scrollTop = chatArea.scrollHeight;
-            })
-            .catch(error => console.error('Error loading messages:', error));
+            });
   }
+
 </script>
 </body>
 </html>
