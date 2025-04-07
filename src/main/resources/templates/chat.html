@@ -318,16 +318,17 @@
 
   let socket;
   let lastUsername = null;
+  let currentGroupId = null;
 
-  function connectWebSocket(cncChat) {
+  function connectWebSocket(groupId) {
     //socket = new WebSocket("ws://46.16.36.171:8080/server");
     socket = new WebSocket("ws://localhost:8080/server");
+    currentGroupId = groupId
 
     socket.onopen = function() {
-      console.log("Соединение установлено.");
-      if (cncChat && socket) {
-        console.log(cncChat);
-        socket.send("/join " + cncChat);
+      console.log("Соединение установлено для группы " + groupId);
+      if (groupId && socket) {
+        socket.send("/join " + groupId); // Присоединяемся к конкретной группе
       }
     };
 
@@ -364,17 +365,19 @@
 
   function sendMessage() {
     const message = document.getElementById("messageInput").value;
-    if (message && socket) {
-      socket.send(message);
+    if (message && socket && currentGroupId) {
+      socket.send(currentGroupId + ":" + message);
       document.getElementById("messageInput").value = '';
     }
   }
 
   // Подключаемся к WebSocket при загрузке страницы
   window.onload = function() {
-    console.log("Страница загружена, инициализация WebSocket...");
-    const cncChat = "chat";
-    connectWebSocket(cncChat);
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupId = urlParams.get('selectedGroupId');
+    if (groupId) {
+      connectWebSocket(groupId);
+    }
   };
 </script>
 </body>

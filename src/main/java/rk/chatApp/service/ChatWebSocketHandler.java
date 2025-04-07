@@ -33,26 +33,29 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         // Обработка команд
         if (payload.startsWith("/join ")) {
-            String cncChat = "chat";
-            joinGroup(session, cncChat);
+            String groupId = payload.substring(6).trim();
+            joinGroup(session, groupId);
             return;
         }
-        // Отправка сообщения
-        String cncChat = "chat";
-        sendMessageToGroup(cncChat, username + ": " + payload);
 
+        // Отправка сообщений в формате "groupId:message"
+        String[] parts = payload.split(":", 2);
+        if (parts.length == 2) {
+            String groupId = parts[0];
+            String messageText = parts[1];
+            sendMessageToGroup(groupId, username + ": " + messageText);
+        }
     }
 
-    private void joinGroup(WebSocketSession session, String cncChat) {
-        session.getAttributes().put("group", cncChat);
-        groups.computeIfAbsent(cncChat, k -> ConcurrentHashMap.newKeySet()).add(session);
-        System.out.println("Пользователь " + sessions.get(session) + " присоединился к группе " + cncChat);
+    private void joinGroup(WebSocketSession session, String groupId) {
+        session.getAttributes().put("group", groupId);
+        groups.computeIfAbsent(groupId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        System.out.println("Пользователь " + sessions.get(session) + " присоединился к группе ID: " + groupId);
     }
 
-    private void sendMessageToGroup(String cncChat, String message) throws IOException {
-        Set<WebSocketSession> groupSessions = groups.get(cncChat);
+    private void sendMessageToGroup(String groupId, String message) throws IOException {
+        Set<WebSocketSession> groupSessions = groups.get(groupId);
         if (groupSessions != null) {
-            System.out.println("dfdddddddddddddddd" + groupSessions);
             for (WebSocketSession webSocketSession : groupSessions) {
                 if (webSocketSession.isOpen()) {
                     webSocketSession.sendMessage(new TextMessage(message));
