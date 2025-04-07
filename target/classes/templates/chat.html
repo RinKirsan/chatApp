@@ -212,22 +212,6 @@
       background-color: #BB86FC;
     }
 
-    .message-group {
-      margin-bottom: 10px;
-    }
-
-    .message-group .username {
-      color: #03DAC5;
-      font-weight: bold;
-      display: block;
-    }
-
-    .message {
-      margin-left: 20px;
-      padding: 5px 0;
-      white-space: pre-wrap;
-    }
-
     .message:not(:last-child) {
       border-bottom: 1px solid #333;
     }
@@ -278,21 +262,9 @@
       margin-left: auto;
     }
 
-    .my-message .message-bubble::after {
-      border-top-color: #0066cc;
-      right: auto;
-      left: -8px;
-      transform: rotate(20deg);
-    }
-
     .my-message .message-time {
       right: auto;
       left: 12px;
-    }
-    .my-message .message-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 4px;
     }
 
     .delete-message-icon {
@@ -310,16 +282,6 @@
       opacity: 1;
     }
 
-
-    .delete-message-btn:hover {
-      background-color: #cc0000;
-    }
-
-    .message-content {
-      display: block;
-      margin-left: 20px;
-      white-space: pre-wrap;
-    }
     .message-group {
       margin-bottom: 12px;
       border-left: 2px solid #03DAC5;
@@ -490,11 +452,16 @@
         messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
         messageDiv.dataset.messageId = message.id;
 
+        // Находим последнее сообщение от этого пользователя
+        const lastMessageFromSameUser = Array.from(chatArea.children)
+                .reverse()
+                .find(el => el.querySelector('.username')?.textContent === message.username);
+
         // Проверяем, нужно ли показывать имя пользователя
-        const lastMessage = chatArea.lastElementChild;
-        const showUsername = !lastMessage ||
-                lastMessage.querySelector('.username')?.textContent !== message.username ||
-                (Date.now() - new Date(message.timestamp).getTime()) > 300000; // 5 минут
+        const msgTime = new Date(message.timestamp || Date.now());
+        const showUsername = !lastMessageFromSameUser ||
+                (lastMessageFromSameUser &&
+                        (msgTime - new Date(lastMessageFromSameUser.querySelector('.message-time')?.textContent)) > 300000); // 5 минут
 
         if (showUsername) {
           const usernameDiv = document.createElement("div");
@@ -509,7 +476,6 @@
 
         const timeDiv = document.createElement("div");
         timeDiv.className = "message-time";
-        const msgTime = new Date(message.timestamp || Date.now());
         timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
 
         bubbleDiv.appendChild(timeDiv);
@@ -527,7 +493,6 @@
             deleteMessage(message.id, groupId);
             return false;
           };
-
           messageDiv.appendChild(deleteIcon);
         }
 
@@ -557,7 +522,6 @@
       socket.send(currentGroupId + ":" + message);
       messageInput.value = '';
     }
-    if (document.activeElement.id !== 'messageInput' && !isDeleteModalOpen) return;
   }
 
   // Подключаемся к WebSocket при загрузке страницы
