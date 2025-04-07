@@ -10,7 +10,6 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import rk.chatApp.model.Message;
 import rk.chatApp.model.User;
-import rk.chatApp.repository.MessageRepository;
 import rk.chatApp.repository.UserRepository;
 
 import java.io.IOException;

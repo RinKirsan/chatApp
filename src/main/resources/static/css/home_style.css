@@ -1,0 +1,51 @@
+/* Общий стиль для страницы */
+body {
+    background-color: #121212;
+    color: #E0E0E0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+h1 {
+    color: #BB86FC;
+    margin-top: 50px;
+}
+
+button {
+    background-color: #6200EE;
+    color: #E0E0E0;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin: 10px;
+}
+
+button:hover {
+    background-color: #BB86FC;
+}
+
+a {
+    text-decoration: none;
+}
+
+div {
+    margin-top: 40px;
+}
+
+input[type="submit"] {
+    background-color: #6200EE;
+    color: #E0E0E0;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+input[type="submit"]:hover {
+    background-color: #BB86FC;
+}

@@ -1,0 +1,66 @@
+/* Основной стиль для темной темы */
+body {
+    background-color: #121212;
+    color: #E0E0E0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+h1 {
+    color: #BB86FC;
+    margin-top: 50px;
+}
+
+/* Контейнер для формы регистрации */
+form {
+    background-color: #1F1F1F;
+    border-radius: 8px;
+    padding: 30px;
+    margin: 20px auto;
+    width: 300px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Стили для полей ввода */
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #6200EE;
+    border-radius: 4px;
+    background-color: #333;
+    color: #E0E0E0;
+    box-sizing: border-box;
+}
+
+/* Стили для кнопки отправки */
+button[type="submit"] {
+    background-color: #6200EE;
+    color: #E0E0E0;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+}
+
+button[type="submit"]:hover {
+    background-color: #BB86FC;
+}
+
+.error {
+    color: #FF5C5C;
+    margin-top: 10px;
+}
+
+.success {
+    color: #76FF03;
+    margin-top: 10px;
+}
