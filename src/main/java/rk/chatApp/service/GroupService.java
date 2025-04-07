@@ -1,5 +1,6 @@
 package rk.chatApp.service;
 
+import jakarta.transaction.Transactional;
 import org.hibernate.Hibernate;
 import rk.chatApp.model.Group;
 import rk.chatApp.model.GroupMember;
@@ -95,7 +96,7 @@ public class GroupService {
         return groupRepository.findById(groupId);
     }
 
-    public void saveMessage(Long groupId, Long userId, String content) {
+    public Message saveMessage(Long groupId, Long userId, String content) {
         Message message = new Message();
         message.setContent(content);
         message.setTimestamp(LocalDateTime.now());
@@ -108,7 +109,7 @@ public class GroupService {
         user.setId(userId);
         message.setUser(user);
 
-        messageRepository.save(message);
+        return messageRepository.save(message);
     }
 
     public List<Message> getMessagesForGroup(Long groupId) {
@@ -125,6 +126,23 @@ public class GroupService {
 
         List<Message> messages = messageRepository.findByGroup(group);
         messageRepository.deleteAll(messages);
+    }
+
+    @Transactional
+    public boolean deleteMessage(Long messageId, Long userId) {
+        // Проверяем, существует ли сообщение и принадлежит ли пользователю
+        Optional<Message> messageOpt = messageRepository.findById(messageId);
+        if (messageOpt.isEmpty()) {
+            return false;
+        }
+
+        Message message = messageOpt.get();
+        if (!message.getUser().getId().equals(userId)) {
+            return false;
+        }
+
+        messageRepository.delete(message);
+        return true;
     }
 
 }

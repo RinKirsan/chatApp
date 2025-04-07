@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Чат</title>
@@ -285,6 +287,27 @@
       right: auto;
       left: 12px;
     }
+    .my-message .message-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .delete-message-btn {
+      background-color: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7em;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+
+    .delete-message-btn:hover {
+      background-color: #cc0000;
+    }
+
     .message-content {
       display: block;
       margin-left: 20px;
@@ -424,16 +447,24 @@
     socket.onmessage = function(event) {
       try {
         const message = JSON.parse(event.data);
+
+        // Обработка удаления сообщения
+        if (message.type === 'delete') {
+          const messageElement = document.querySelector(`[data-message-id="${message.messageId}"]`);
+          if (messageElement) {
+            messageElement.remove();
+          }
+          return;
+        }
+
         const chatArea = document.getElementById("chatArea");
         const currentUser = /*[[${#authentication.principal.username}]]*/ "";
         const isCurrentUser = message.username === currentUser;
 
         const messageDiv = document.createElement("div");
         messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+        messageDiv.dataset.messageId = message.id;
 
-        // Показываем имя пользователя если:
-        // 1. Это не текущий пользователь ИЛИ
-        // 2. Это текущий пользователь, но нужно показать имя (showUsername = true)
         if ((!isCurrentUser || message.showUsername)) {
           const usernameDiv = document.createElement("div");
           usernameDiv.className = "username";
@@ -452,6 +483,21 @@
 
         bubbleDiv.appendChild(timeDiv);
         messageDiv.appendChild(bubbleDiv);
+
+        // Добавляем кнопку удаления для своих сообщений
+        if (isCurrentUser) {
+          const actionsDiv = document.createElement("div");
+          actionsDiv.className = "message-actions";
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete-message-btn";
+          deleteBtn.textContent = "Удалить";
+          deleteBtn.onclick = () => deleteMessage(message.id, groupId);
+
+          actionsDiv.appendChild(deleteBtn);
+          messageDiv.appendChild(actionsDiv);
+        }
+
         chatArea.appendChild(messageDiv);
         chatArea.scrollTop = chatArea.scrollHeight;
       } catch (e) {
@@ -488,6 +534,41 @@
     }
   };
 
+  function deleteMessage(messageId, groupId) {
+    if (confirm("Вы уверены, что хотите удалить это сообщение?")) {
+      // Получаем CSRF токен
+      const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+      fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          [csrfHeader]: csrfToken
+        },
+        credentials: 'include'
+      })
+              .then(response => {
+                if (!response.ok) {
+                  return response.json().then(err => { throw err; });
+                }
+                // Отправляем команду на удаление через WebSocket
+                if (socket) {
+                  const deleteCommand = {
+                    type: 'delete',
+                    messageId: messageId.toString(),
+                    groupId: groupId.toString()
+                  };
+                  socket.send(JSON.stringify(deleteCommand));
+                }
+              })
+              .catch(error => {
+                console.error("Ошибка при удалении сообщения:", error);
+                alert("Ошибка при удалении: " + (error.message || 'Неизвестная ошибка'));
+              });
+    }
+  }
+
   function loadMessages(groupId) {
     fetch(`/api/messages?groupId=${groupId}`)
             .then(response => response.json())
@@ -502,10 +583,8 @@
                 const isCurrentUser = msg.username === currentUser;
                 const messageDiv = document.createElement("div");
                 messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+                messageDiv.dataset.messageId = msg.id;
 
-                // Показываем имя пользователя если:
-                // 1. Это не текущий пользователь ИЛИ
-                // 2. Это текущий пользователь, но предыдущее сообщение было от другого
                 if ((!isCurrentUser || msg.username !== lastUsername)) {
                   const usernameDiv = document.createElement("div");
                   usernameDiv.className = "username";
@@ -526,6 +605,20 @@
 
                 bubbleDiv.appendChild(timeDiv);
                 messageDiv.appendChild(bubbleDiv);
+
+                if (isCurrentUser) {
+                  const actionsDiv = document.createElement("div");
+                  actionsDiv.className = "message-actions";
+
+                  const deleteBtn = document.createElement("button");
+                  deleteBtn.className = "delete-message-btn";
+                  deleteBtn.textContent = "Удалить";
+                  deleteBtn.onclick = () => deleteMessage(msg.id, groupId);
+
+                  actionsDiv.appendChild(deleteBtn);
+                  messageDiv.appendChild(actionsDiv);
+                }
+
                 chatArea.appendChild(messageDiv);
               });
 

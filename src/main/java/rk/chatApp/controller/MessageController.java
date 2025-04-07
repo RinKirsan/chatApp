@@ -1,13 +1,17 @@
 package rk.chatApp.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import rk.chatApp.dto.MessageDto;
 import rk.chatApp.model.Message;
+import rk.chatApp.model.User;
 import rk.chatApp.service.GroupService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,6 +41,25 @@ public class MessageController {
             return ResponseEntity.ok(messageDtos);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<?> deleteMessage(
+            @PathVariable Long messageId,
+            @AuthenticationPrincipal User user) {
+
+        try {
+            boolean deleted = groupService.deleteMessage(messageId, user.getId());
+            if (deleted) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Вы не можете удалить это сообщение"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Ошибка при удалении сообщения"));
         }
     }
 }
