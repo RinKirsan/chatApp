@@ -418,7 +418,7 @@
     <h2>Удаление сообщения</h2>
     <p>Вы уверены, что хотите удалить это сообщение?</p>
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
-      <button onclick="confirmDelete()" style="background-color: #6200EE;">Удалить</button>
+      <button id="confirmDeleteBtn" style="background-color: #6200EE;">Удалить</button>
       <button onclick="closeDeleteConfirmModal()" style="background-color: #333333;">Отмена</button>
     </div>
   </div>
@@ -523,7 +523,11 @@
                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                 </svg>
             `;
-          deleteIcon.onclick = () => deleteMessage(message.id, groupId);
+          deleteIcon.onclick = () => {
+            deleteMessage(message.id, groupId);
+            return false;
+          };
+
           messageDiv.appendChild(deleteIcon);
         }
 
@@ -544,6 +548,8 @@
   }
 
   function sendMessage() {
+
+
     const messageInput = document.getElementById("messageInput");
     const message = messageInput.value.trim();
 
@@ -551,6 +557,7 @@
       socket.send(currentGroupId + ":" + message);
       messageInput.value = '';
     }
+    if (document.activeElement.id !== 'messageInput' && !isDeleteModalOpen) return;
   }
 
   // Подключаемся к WebSocket при загрузке страницы
@@ -561,22 +568,50 @@
       connectWebSocket(groupId);
       loadMessages(groupId);
     }
+    document.getElementById('messageInput').focus();
   };
 
   let messageToDelete = null;
   let groupIdForDelete = null;
+  let isDeleteModalOpen = false;
 
   // Функции для работы с модальным окном удаления
+
+  document.addEventListener('keydown', function(event) {
+    // Если открыто модальное окно удаления - обрабатываем Enter только для него
+    if (isDeleteModalOpen) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('confirmDeleteBtn').click();
+      }
+      return;
+    }
+
+    // Обработка Enter для отправки сообщения
+    if (event.key === 'Enter' && !isDeleteModalOpen) {
+      const activeElement = document.activeElement;
+      if (activeElement.id === 'messageInput') {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+  });
+  document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
   function openDeleteConfirmModal(messageId, groupId) {
     messageToDelete = messageId;
     groupIdForDelete = groupId;
+    isDeleteModalOpen = true;
     document.getElementById("deleteConfirmModal").style.display = "block";
+    document.getElementById('confirmDeleteBtn').focus();
   }
 
   function closeDeleteConfirmModal() {
     document.getElementById("deleteConfirmModal").style.display = "none";
     messageToDelete = null;
     groupIdForDelete = null;
+    isDeleteModalOpen = false;
+    document.getElementById('messageInput').focus();
   }
 
   function confirmDelete() {
@@ -676,7 +711,10 @@
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
                     `;
-                  deleteIcon.onclick = () => deleteMessage(msg.id, groupId);
+                  deleteIcon.onclick = () => {
+                    deleteMessage(msg.id, groupId);
+                    return false;
+                  };
                   messageDiv.appendChild(deleteIcon);
                 }
 
