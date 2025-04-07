@@ -78,4 +78,11 @@ public class AdminController {
         groupService.removeUserFromGroup(groupId, userId);
         return "redirect:/admin/groups"; // После удаления редиректим на страницу групп
     }
+
+    @PostMapping("/groups/{groupId}/clear")
+    public String clearGroupChat(@PathVariable Long groupId) {
+        groupService.clearGroupChat(groupId);
+        return "redirect:/admin/groups"; // обновляем страницу
+    }
+
 }

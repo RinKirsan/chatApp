@@ -119,4 +119,12 @@ public class GroupService {
                 })
                 .toList();
     }
+    public void clearGroupChat(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Группа не найдена"));
+
+        List<Message> messages = messageRepository.findByGroup(group);
+        messageRepository.deleteAll(messages);
+    }
+
 }
