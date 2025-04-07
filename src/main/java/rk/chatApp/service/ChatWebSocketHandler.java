@@ -31,13 +31,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String username = sessions.get(session);
         String payload = message.getPayload();
 
-        // Обработка команд (например, присоединение к группе)
+        // Обработка команд
         if (payload.startsWith("/join ")) {
             String cncChat = "chat";
             joinGroup(session, cncChat);
             return;
         }
-        // Отправка сообщения в группу
+        // Отправка сообщения
         String cncChat = "chat";
         sendMessageToGroup(cncChat, username + ": " + payload);
 
@@ -52,6 +52,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void sendMessageToGroup(String cncChat, String message) throws IOException {
         Set<WebSocketSession> groupSessions = groups.get(cncChat);
         if (groupSessions != null) {
+            System.out.println("dfdddddddddddddddd" + groupSessions);
             for (WebSocketSession webSocketSession : groupSessions) {
                 if (webSocketSession.isOpen()) {
                     webSocketSession.sendMessage(new TextMessage(message));
