@@ -1,5 +1,6 @@
 package rk.chatApp.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -9,10 +10,17 @@ import rk.chatApp.service.ChatWebSocketHandler;
 @Configuration
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
+
+    private final ChatWebSocketHandler chatWebSocketHandler;
+
+    public WebSocketConfig(ChatWebSocketHandler chatWebSocketHandler) {
+        this.chatWebSocketHandler = chatWebSocketHandler;
+    }
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(new ChatWebSocketHandler(), "/server")
-                .addInterceptors(new UsernameHandshakeInterceptor()) // Добавляем перехватчик
-                .setAllowedOrigins("*"); // Разрешаем подключение с любых источников
+        registry.addHandler(chatWebSocketHandler, "/server")
+                .addInterceptors(new UsernameHandshakeInterceptor())
+                .setAllowedOrigins("*");
     }
 }

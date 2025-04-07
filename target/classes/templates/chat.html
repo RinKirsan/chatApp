@@ -377,8 +377,27 @@
     const groupId = urlParams.get('selectedGroupId');
     if (groupId) {
       connectWebSocket(groupId);
+      loadMessages(groupId);
     }
   };
+
+  function loadMessages(groupId) {
+    fetch(`/api/messages?groupId=${groupId}`)
+            .then(response => {
+              if (!response.ok) throw new Error('Network response was not ok');
+              return response.json();
+            })
+            .then(messages => {
+              const chatArea = document.getElementById("chatArea");
+              messages.forEach(msg => {
+                const formattedMessage =
+                        `<span class="username">${msg.username}:</span>\n  ${msg.content}\n`;
+                chatArea.innerHTML += formattedMessage;
+              });
+              chatArea.scrollTop = chatArea.scrollHeight;
+            })
+            .catch(error => console.error('Error loading messages:', error));
+  }
 </script>
 </body>
 </html>
