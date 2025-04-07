@@ -96,6 +96,7 @@ public class GroupService {
         return groupRepository.findById(groupId);
     }
 
+    @Transactional
     public Message saveMessage(Long groupId, Long userId, String content) {
         Message message = new Message();
         message.setContent(content);

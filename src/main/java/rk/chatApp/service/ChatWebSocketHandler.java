@@ -8,6 +8,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import rk.chatApp.model.Message;
 import rk.chatApp.model.User;
 import rk.chatApp.repository.MessageRepository;
 import rk.chatApp.repository.UserRepository;
@@ -88,23 +89,26 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handleChatMessage(String username, String groupId, String messageText) throws IOException {
+        User user = userRepository.findByUsername(username);
+        Message savedMessage = null;
+        if (user != null) {
+            savedMessage = groupService.saveMessage(Long.parseLong(groupId), user.getId(), messageText);
+        }
+
         Map<String, Object> messageData = new HashMap<>();
         messageData.put("groupId", groupId);
         messageData.put("username", username);
         messageData.put("content", messageText);
         messageData.put("timestamp", LocalDateTime.now().toString());
+        if (savedMessage != null) {
+            messageData.put("id", savedMessage.getId());
+        }
 
         String lastUser = lastUsernames.get(groupId);
         messageData.put("showUsername", !username.equals(lastUser));
         lastUsernames.put(groupId, username);
 
         String jsonMessage = objectMapper.writeValueAsString(messageData);
-
-        User user = userRepository.findByUsername(username);
-        if (user != null) {
-            groupService.saveMessage(Long.parseLong(groupId), user.getId(), messageText);
-        }
-
         sendMessageToGroup(groupId, jsonMessage);
     }
 

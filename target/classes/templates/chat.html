@@ -461,6 +461,11 @@
         const currentUser = /*[[${#authentication.principal.username}]]*/ "";
         const isCurrentUser = message.username === currentUser;
 
+        if (!message.id) {
+          console.warn("Получено сообщение без ID:", message);
+          return;
+        }
+
         const messageDiv = document.createElement("div");
         messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
         messageDiv.dataset.messageId = message.id;
@@ -535,8 +540,13 @@
   };
 
   function deleteMessage(messageId, groupId) {
+    if (!messageId) {
+      console.error("Не удалось удалить сообщение: отсутствует ID");
+      alert("Не удалось удалить сообщение: отсутствует ID");
+      return;
+    }
+
     if (confirm("Вы уверены, что хотите удалить это сообщение?")) {
-      // Получаем CSRF токен
       const csrfToken = document.querySelector('meta[name="_csrf"]').content;
       const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
@@ -552,12 +562,11 @@
                 if (!response.ok) {
                   return response.json().then(err => { throw err; });
                 }
-                // Отправляем команду на удаление через WebSocket
                 if (socket) {
                   const deleteCommand = {
                     type: 'delete',
-                    messageId: messageId.toString(),
-                    groupId: groupId.toString()
+                    messageId: messageId,
+                    groupId: groupId
                   };
                   socket.send(JSON.stringify(deleteCommand));
                 }
@@ -583,7 +592,7 @@
                 const isCurrentUser = msg.username === currentUser;
                 const messageDiv = document.createElement("div");
                 messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
-                messageDiv.dataset.messageId = msg.id; // Добавляем ID сообщения
+                messageDiv.dataset.messageId = msg.id;
 
                 if ((!isCurrentUser || msg.username !== lastUsername)) {
                   const usernameDiv = document.createElement("div");
@@ -606,7 +615,6 @@
                 bubbleDiv.appendChild(timeDiv);
                 messageDiv.appendChild(bubbleDiv);
 
-                // Добавляем кнопку удаления для своих сообщений
                 if (isCurrentUser) {
                   const actionsDiv = document.createElement("div");
                   actionsDiv.className = "message-actions";
