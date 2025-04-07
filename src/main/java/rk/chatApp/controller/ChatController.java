@@ -26,7 +26,7 @@ public class ChatController {
 
     @GetMapping("/chat")
     public String chatPage(@AuthenticationPrincipal User user,
-                           @RequestParam(required = false) Long selectedGroupId, // Добавляем параметр для выбранной группы
+                           @RequestParam(required = false) Long selectedGroupId,
                            Model model) {
         // Получаем список групп пользователя
         var userGroups = groupService.getGroupsByUser(user);
