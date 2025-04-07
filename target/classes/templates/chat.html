@@ -237,6 +237,8 @@
       max-width: 80%;
       width: fit-content;
       animation: fadeIn 0.3s ease-out;
+      position: relative;
+      margin-right: 25px;
     }
 
     .message-bubble {
@@ -293,16 +295,21 @@
       margin-top: 4px;
     }
 
-    .delete-message-btn {
-      background-color: #ff4444;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 0.7em;
+    .delete-message-icon {
+      position: absolute;
+      right: -25px;
+      bottom: 40px;
+      width: 16px;
+      height: 16px;
       cursor: pointer;
-      margin-left: 5px;
+      opacity: 0.5;
+      transition: opacity 0.2s;
     }
+
+    .delete-message-icon:hover {
+      opacity: 1;
+    }
+
 
     .delete-message-btn:hover {
       background-color: #cc0000;
@@ -404,7 +411,21 @@
   </div>
 </div>
 
+<!-- Модальное окно для удаления сообщения -->
+<div id="deleteConfirmModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeDeleteConfirmModal()">&times;</span>
+    <h2>Удаление сообщения</h2>
+    <p>Вы уверены, что хотите удалить это сообщение?</p>
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button onclick="confirmDelete()" style="background-color: #6200EE;">Удалить</button>
+      <button onclick="closeDeleteConfirmModal()" style="background-color: #333333;">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <script th:inline="javascript">
+
   // Показать/скрыть поле для пароля при выборе "Приватная группа"
   document.querySelector('[name="isPrivate"]').addEventListener('change', function() {
     const passwordField = document.getElementById("passwordField");
@@ -429,7 +450,6 @@
   }
 
   let socket;
-  let lastUsername = null;
   let currentGroupId = null;
 
   function connectWebSocket(groupId) {
@@ -470,7 +490,13 @@
         messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
         messageDiv.dataset.messageId = message.id;
 
-        if ((!isCurrentUser || message.showUsername)) {
+        // Проверяем, нужно ли показывать имя пользователя
+        const lastMessage = chatArea.lastElementChild;
+        const showUsername = !lastMessage ||
+                lastMessage.querySelector('.username')?.textContent !== message.username ||
+                (Date.now() - new Date(message.timestamp).getTime()) > 300000; // 5 минут
+
+        if (showUsername) {
           const usernameDiv = document.createElement("div");
           usernameDiv.className = "username";
           usernameDiv.textContent = message.username;
@@ -489,18 +515,16 @@
         bubbleDiv.appendChild(timeDiv);
         messageDiv.appendChild(bubbleDiv);
 
-        // Добавляем кнопку удаления для своих сообщений
         if (isCurrentUser) {
-          const actionsDiv = document.createElement("div");
-          actionsDiv.className = "message-actions";
-
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "delete-message-btn";
-          deleteBtn.textContent = "Удалить";
-          deleteBtn.onclick = () => deleteMessage(message.id, groupId);
-
-          actionsDiv.appendChild(deleteBtn);
-          messageDiv.appendChild(actionsDiv);
+          const deleteIcon = document.createElement("div");
+          deleteIcon.className = "delete-message-icon";
+          deleteIcon.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="#888888">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+            `;
+          deleteIcon.onclick = () => deleteMessage(message.id, groupId);
+          messageDiv.appendChild(deleteIcon);
         }
 
         chatArea.appendChild(messageDiv);
@@ -539,43 +563,66 @@
     }
   };
 
+  let messageToDelete = null;
+  let groupIdForDelete = null;
+
+  // Функции для работы с модальным окном удаления
+  function openDeleteConfirmModal(messageId, groupId) {
+    messageToDelete = messageId;
+    groupIdForDelete = groupId;
+    document.getElementById("deleteConfirmModal").style.display = "block";
+  }
+
+  function closeDeleteConfirmModal() {
+    document.getElementById("deleteConfirmModal").style.display = "none";
+    messageToDelete = null;
+    groupIdForDelete = null;
+  }
+
+  function confirmDelete() {
+    if (messageToDelete && groupIdForDelete) {
+      performDelete(messageToDelete, groupIdForDelete);
+    }
+    closeDeleteConfirmModal();
+  }
+
   function deleteMessage(messageId, groupId) {
     if (!messageId) {
       console.error("Не удалось удалить сообщение: отсутствует ID");
-      alert("Не удалось удалить сообщение: отсутствует ID");
       return;
     }
+    openDeleteConfirmModal(messageId, groupId);
+  }
 
-    if (confirm("Вы уверены, что хотите удалить это сообщение?")) {
-      const csrfToken = document.querySelector('meta[name="_csrf"]').content;
-      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+  function performDelete(messageId, groupId) {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
-      fetch(`/api/messages/${messageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          [csrfHeader]: csrfToken
-        },
-        credentials: 'include'
-      })
-              .then(response => {
-                if (!response.ok) {
-                  return response.json().then(err => { throw err; });
-                }
-                if (socket) {
-                  const deleteCommand = {
-                    type: 'delete',
-                    messageId: messageId,
-                    groupId: groupId
-                  };
-                  socket.send(JSON.stringify(deleteCommand));
-                }
-              })
-              .catch(error => {
-                console.error("Ошибка при удалении сообщения:", error);
-                alert("Ошибка при удалении: " + (error.message || 'Неизвестная ошибка'));
-              });
-    }
+    fetch(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        [csrfHeader]: csrfToken
+      },
+      credentials: 'include'
+    })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => { throw err; });
+              }
+              if (socket) {
+                const deleteCommand = {
+                  type: 'delete',
+                  messageId: messageId,
+                  groupId: groupId
+                };
+                socket.send(JSON.stringify(deleteCommand));
+              }
+            })
+            .catch(error => {
+              console.error("Ошибка при удалении сообщения:", error);
+              alert("Ошибка при удалении: " + (error.message || 'Неизвестная ошибка'));
+            });
   }
 
   function loadMessages(groupId) {
@@ -586,6 +633,7 @@
               chatArea.innerHTML = '';
 
               let lastUsername = null;
+              let lastMessageTime = null;
               const currentUser = /*[[${#authentication.principal.username}]]*/ "";
 
               messages.forEach(msg => {
@@ -594,7 +642,12 @@
                 messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
                 messageDiv.dataset.messageId = msg.id;
 
-                if ((!isCurrentUser || msg.username !== lastUsername)) {
+                // Проверяем, нужно ли показывать имя пользователя
+                const msgTime = new Date(msg.timestamp);
+                const showUsername = lastUsername !== msg.username ||
+                        (lastMessageTime && (msgTime - lastMessageTime) > 300000); // 5 минут
+
+                if (showUsername) {
                   const usernameDiv = document.createElement("div");
                   usernameDiv.className = "username";
                   usernameDiv.textContent = msg.username;
@@ -602,6 +655,7 @@
                 }
 
                 lastUsername = msg.username;
+                lastMessageTime = msgTime;
 
                 const bubbleDiv = document.createElement("div");
                 bubbleDiv.className = "message-bubble";
@@ -609,23 +663,21 @@
 
                 const timeDiv = document.createElement("div");
                 timeDiv.className = "message-time";
-                const msgTime = new Date(msg.timestamp);
                 timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
 
                 bubbleDiv.appendChild(timeDiv);
                 messageDiv.appendChild(bubbleDiv);
 
                 if (isCurrentUser) {
-                  const actionsDiv = document.createElement("div");
-                  actionsDiv.className = "message-actions";
-
-                  const deleteBtn = document.createElement("button");
-                  deleteBtn.className = "delete-message-btn";
-                  deleteBtn.textContent = "Удалить";
-                  deleteBtn.onclick = () => deleteMessage(msg.id, groupId);
-
-                  actionsDiv.appendChild(deleteBtn);
-                  messageDiv.appendChild(actionsDiv);
+                  const deleteIcon = document.createElement("div");
+                  deleteIcon.className = "delete-message-icon";
+                  deleteIcon.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="#888888">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    `;
+                  deleteIcon.onclick = () => deleteMessage(msg.id, groupId);
+                  messageDiv.appendChild(deleteIcon);
                 }
 
                 chatArea.appendChild(messageDiv);
