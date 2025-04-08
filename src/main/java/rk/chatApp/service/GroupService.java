@@ -1,13 +1,18 @@
 package rk.chatApp.service;
 
+import jakarta.transaction.Transactional;
+import org.hibernate.Hibernate;
 import rk.chatApp.model.Group;
 import rk.chatApp.model.GroupMember;
+import rk.chatApp.model.Message;
 import rk.chatApp.model.User;
 import rk.chatApp.repository.GroupRepository;
 import rk.chatApp.repository.GroupMemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import rk.chatApp.repository.MessageRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,6 +24,9 @@ public class GroupService {
 
     @Autowired
     private GroupMemberRepository groupMemberRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
 
     public Group createGroup(String name, User creator, String password, boolean isPrivate) {
         Group group = new Group();
@@ -84,8 +92,58 @@ public class GroupService {
         return groupRepository.findAll();
     }
 
-    // Добавляем метод для поиска группы по ID
     public Optional<Group> getGroupById(Long groupId) {
         return groupRepository.findById(groupId);
     }
+
+    @Transactional
+    public Message saveMessage(Long groupId, Long userId, String content) {
+        Message message = new Message();
+        message.setContent(content);
+        message.setTimestamp(LocalDateTime.now());
+
+        Group group = new Group();
+        group.setId(groupId);
+        message.setGroup(group);
+
+        User user = new User();
+        user.setId(userId);
+        message.setUser(user);
+
+        return messageRepository.save(message);
+    }
+
+    public List<Message> getMessagesForGroup(Long groupId) {
+        return messageRepository.findByGroupIdOrderByTimestampAsc(groupId)
+                .stream()
+                .peek(message -> {
+                    Hibernate.initialize(message.getUser());
+                })
+                .toList();
+    }
+    public void clearGroupChat(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Группа не найдена"));
+
+        List<Message> messages = messageRepository.findByGroup(group);
+        messageRepository.deleteAll(messages);
+    }
+
+    @Transactional
+    public boolean deleteMessage(Long messageId, Long userId) {
+        // Проверяем, существует ли сообщение и принадлежит ли пользователю
+        Optional<Message> messageOpt = messageRepository.findById(messageId);
+        if (messageOpt.isEmpty()) {
+            return false;
+        }
+
+        Message message = messageOpt.get();
+        if (!message.getUser().getId().equals(userId)) {
+            return false;
+        }
+
+        messageRepository.delete(message);
+        return true;
+    }
+
 }

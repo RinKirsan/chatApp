@@ -1,218 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Чат</title>
-  <style>
-    /* Основной стиль для темной темы */
-    body {
-      background-color: #121212;
-      color: #E0E0E0;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    h1, h2 {
-      color: #BB86FC;
-      text-align: center;
-    }
-
-    /* Стили для ссылок */
-    a {
-      color: #03DAC5;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .username {
-      color: #03DAC5;
-    }
-
-    .group-list {
-      width: 300px;
-      padding: 20px;
-      border-right: 1px solid #555;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-    }
-
-    .group-list ul {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .group-list li {
-      margin: 5px 0;
-    }
-
-    .lock-icon {
-      color: red;
-      margin-left: 5px;
-    }
-
-    /* Стили для модальных окон */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content {
-      background-color: #1F1F1F;
-      margin: 15% auto;
-      padding: 30px;
-      border: 1px solid #888;
-      width: 300px;
-      text-align: center;
-      border-radius: 8px;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .close {
-      color: #BB86FC;
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .close:hover {
-      color: #FF4081;
-    }
-
-    input[type="text"], input[type="password"], button {
-      background-color: #333333;
-      color: #E0E0E0;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 8px;
-      margin-bottom: 10px;
-      width: 100%;
-      max-width: 300px;
-      box-sizing: border-box;
-    }
-    input[type="text"]:focus, input[type="password"]:focus, button:focus {
-      outline: none;
-      border-color: #BB86FC;
-    }
-    button {
-      cursor: pointer;
-      transition: background-color 0.3s;
-      max-width: 150px;
-    }
-    button:hover {
-      background-color: #6200EE;
-    }
-    input[type="checkbox"] {
-      margin-right: 5px;
-    }
-
-    .group-list ul li form {
-      display: inline;
-    }
-
-    .group-list li button {
-      display: block;
-      margin-top: 10px;
-      width: auto;
-      margin-left: 0;
-    }
-
-    .chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      overflow: hidden;
-    }
-
-    #chatArea {
-      flex: 1;
-      border: 1px solid #555;
-      background-color: #1F1F1F;
-      padding: 15px;
-      margin-bottom: 20px;
-      overflow-y: auto;
-      color: #E0E0E0;
-      border-radius: 8px;
-      white-space: pre-wrap;
-    }
-
-    .input-container {
-      display: flex;
-      gap: 10px;
-    }
-
-    .input-container input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      background-color: #333;
-      color: #E0E0E0;
-      border: 1px solid #555;
-      border-radius: 4px;
-    }
-
-    .input-container button {
-      background-color: #6200EE;
-      color: #E0E0E0;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .input-container button:hover {
-      background-color: #BB86FC;
-    }
-
-    #passwordField {
-      display: none;
-    }
-
-    /* Стиль для круглой кнопки с плюсиком */
-    .add-group-button {
-      position: relative;
-      margin-top: 20px;
-      width: 50px;
-      height: 50px;
-      background-color: #6200EE;
-      color: #E0E0E0;
-      border: none;
-      border-radius: 50%;
-      font-size: 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      transition: background-color 0.3s;
-    }
-
-    .add-group-button:hover {
-      background-color: #BB86FC;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/chat_style.css">
 </head>
 <body>
 <!-- Контейнер для всех элементов -->
@@ -295,7 +89,21 @@
   </div>
 </div>
 
-<script>
+<!-- Модальное окно для удаления сообщения -->
+<div id="deleteConfirmModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeDeleteConfirmModal()">&times;</span>
+    <h2>Удаление сообщения</h2>
+    <p>Вы уверены, что хотите удалить это сообщение?</p>
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button id="confirmDeleteBtn" style="background-color: #6200EE;">Удалить</button>
+      <button onclick="closeDeleteConfirmModal()" style="background-color: #333333;">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+
   // Показать/скрыть поле для пароля при выборе "Приватная группа"
   document.querySelector('[name="isPrivate"]').addEventListener('change', function() {
     const passwordField = document.getElementById("passwordField");
@@ -320,12 +128,11 @@
   }
 
   let socket;
-  let lastUsername = null;
   let currentGroupId = null;
 
   function connectWebSocket(groupId) {
-    //socket = new WebSocket("ws://46.16.36.171:8080/server");
-    socket = new WebSocket("ws://localhost:8080/server");
+    socket = new WebSocket("ws://46.16.36.171:8080/server");
+    //socket = new WebSocket("ws://localhost:8080/server");
     currentGroupId = groupId
 
     socket.onopen = function() {
@@ -336,25 +143,80 @@
     };
 
     socket.onmessage = function(event) {
-      const message = event.data;
-      const chatArea = document.getElementById("chatArea");
+      try {
+        const message = JSON.parse(event.data);
 
-      const separatorIndex = message.indexOf(':');
-      const username = message.substring(0, separatorIndex);
-      const text = message.substring(separatorIndex + 1).trim();
+        // Обработка удаления сообщения
+        if (message.type === 'delete') {
+          const messageElement = document.querySelector(`[data-message-id="${message.messageId}"]`);
+          if (messageElement) {
+            messageElement.remove();
+          }
+          return;
+        }
 
-      const tabl = "  ";
+        const chatArea = document.getElementById("chatArea");
+        const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+        const isCurrentUser = message.username === currentUser;
 
-      let formattedMessage;
-      if (username === lastUsername) {
-        formattedMessage = `${tabl}${text}\n`;
-      } else {
-        formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
+        if (!message.id) {
+          console.warn("Получено сообщение без ID:", message);
+          return;
+        }
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+        messageDiv.dataset.messageId = message.id;
+
+        // Находим последнее сообщение от этого пользователя
+        const lastMessageFromSameUser = Array.from(chatArea.children)
+                .reverse()
+                .find(el => el.querySelector('.username')?.textContent === message.username);
+
+        // Проверяем, нужно ли показывать имя пользователя
+        const msgTime = new Date(message.timestamp || Date.now());
+        const showUsername = !lastMessageFromSameUser ||
+                (lastMessageFromSameUser &&
+                        (msgTime - new Date(lastMessageFromSameUser.querySelector('.message-time')?.textContent)) > 300000); // 5 минут
+
+        if (showUsername) {
+          const usernameDiv = document.createElement("div");
+          usernameDiv.className = "username";
+          usernameDiv.textContent = message.username;
+          messageDiv.appendChild(usernameDiv);
+        }
+
+        const bubbleDiv = document.createElement("div");
+        bubbleDiv.className = "message-bubble";
+        bubbleDiv.textContent = message.content;
+
+        const timeDiv = document.createElement("div");
+        timeDiv.className = "message-time";
+        timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+        bubbleDiv.appendChild(timeDiv);
+        messageDiv.appendChild(bubbleDiv);
+
+        if (isCurrentUser) {
+          const deleteIcon = document.createElement("div");
+          deleteIcon.className = "delete-message-icon";
+          deleteIcon.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="#888888">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+            `;
+          deleteIcon.onclick = () => {
+            deleteMessage(message.id, groupId);
+            return false;
+          };
+          messageDiv.appendChild(deleteIcon);
+        }
+
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      } catch (e) {
+        console.error("Error processing message:", e);
       }
-
-      chatArea.innerHTML += formattedMessage;
-      lastUsername = username;
-      chatArea.scrollTop = chatArea.scrollHeight;
     };
 
     socket.onclose = function() {
@@ -367,10 +229,14 @@
   }
 
   function sendMessage() {
-    const message = document.getElementById("messageInput").value;
+
+
+    const messageInput = document.getElementById("messageInput");
+    const message = messageInput.value.trim();
+
     if (message && socket && currentGroupId) {
       socket.send(currentGroupId + ":" + message);
-      document.getElementById("messageInput").value = '';
+      messageInput.value = '';
     }
   }
 
@@ -380,8 +246,165 @@
     const groupId = urlParams.get('selectedGroupId');
     if (groupId) {
       connectWebSocket(groupId);
+      loadMessages(groupId);
     }
+    document.getElementById('messageInput').focus();
   };
+
+  let messageToDelete = null;
+  let groupIdForDelete = null;
+  let isDeleteModalOpen = false;
+
+  // Функции для работы с модальным окном удаления
+
+  document.addEventListener('keydown', function(event) {
+    // Если открыто модальное окно удаления - обрабатываем Enter только для него
+    if (isDeleteModalOpen) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('confirmDeleteBtn').click();
+      }
+      return;
+    }
+
+    // Обработка Enter для отправки сообщения
+    if (event.key === 'Enter' && !isDeleteModalOpen) {
+      const activeElement = document.activeElement;
+      if (activeElement.id === 'messageInput') {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+  });
+  document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
+  function openDeleteConfirmModal(messageId, groupId) {
+    messageToDelete = messageId;
+    groupIdForDelete = groupId;
+    isDeleteModalOpen = true;
+    document.getElementById("deleteConfirmModal").style.display = "block";
+    document.getElementById('confirmDeleteBtn').focus();
+  }
+
+  function closeDeleteConfirmModal() {
+    document.getElementById("deleteConfirmModal").style.display = "none";
+    messageToDelete = null;
+    groupIdForDelete = null;
+    isDeleteModalOpen = false;
+    document.getElementById('messageInput').focus();
+  }
+
+  function confirmDelete() {
+    if (messageToDelete && groupIdForDelete) {
+      performDelete(messageToDelete, groupIdForDelete);
+    }
+    closeDeleteConfirmModal();
+  }
+
+  function deleteMessage(messageId, groupId) {
+    if (!messageId) {
+      console.error("Не удалось удалить сообщение: отсутствует ID");
+      return;
+    }
+    openDeleteConfirmModal(messageId, groupId);
+  }
+
+  function performDelete(messageId, groupId) {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+    fetch(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        [csrfHeader]: csrfToken
+      },
+      credentials: 'include'
+    })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => { throw err; });
+              }
+              if (socket) {
+                const deleteCommand = {
+                  type: 'delete',
+                  messageId: messageId,
+                  groupId: groupId
+                };
+                socket.send(JSON.stringify(deleteCommand));
+              }
+            })
+            .catch(error => {
+              console.error("Ошибка при удалении сообщения:", error);
+              alert("Ошибка при удалении: " + (error.message || 'Неизвестная ошибка'));
+            });
+  }
+
+  function loadMessages(groupId) {
+    fetch(`/api/messages?groupId=${groupId}`)
+            .then(response => response.json())
+            .then(messages => {
+              const chatArea = document.getElementById("chatArea");
+              chatArea.innerHTML = '';
+
+              let lastUsername = null;
+              let lastMessageTime = null;
+              const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+
+              messages.forEach(msg => {
+                const isCurrentUser = msg.username === currentUser;
+                const messageDiv = document.createElement("div");
+                messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+                messageDiv.dataset.messageId = msg.id;
+
+                // Проверяем, нужно ли показывать имя пользователя
+                const msgTime = new Date(msg.timestamp);
+                const showUsername = lastUsername !== msg.username ||
+                        (lastMessageTime && (msgTime - lastMessageTime) > 300000); // 5 минут
+
+                if (showUsername) {
+                  const usernameDiv = document.createElement("div");
+                  usernameDiv.className = "username";
+                  usernameDiv.textContent = msg.username;
+                  messageDiv.appendChild(usernameDiv);
+                }
+
+                lastUsername = msg.username;
+                lastMessageTime = msgTime;
+
+                const bubbleDiv = document.createElement("div");
+                bubbleDiv.className = "message-bubble";
+                bubbleDiv.textContent = msg.content;
+
+                const timeDiv = document.createElement("div");
+                timeDiv.className = "message-time";
+                timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+                bubbleDiv.appendChild(timeDiv);
+                messageDiv.appendChild(bubbleDiv);
+
+                if (isCurrentUser) {
+                  const deleteIcon = document.createElement("div");
+                  deleteIcon.className = "delete-message-icon";
+                  deleteIcon.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="#888888">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    `;
+                  deleteIcon.onclick = () => {
+                    deleteMessage(msg.id, groupId);
+                    return false;
+                  };
+                  messageDiv.appendChild(deleteIcon);
+                }
+
+                chatArea.appendChild(messageDiv);
+              });
+
+              chatArea.scrollTop = chatArea.scrollHeight;
+            });
+  }
+
 </script>
 </body>
 </html>

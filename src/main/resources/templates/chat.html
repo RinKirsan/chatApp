@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Чат</title>
+  <link rel="stylesheet" href="/css/chat_style.css">
   <style>
     /* Основной стиль для темной темы */
     body {
@@ -306,7 +309,21 @@
   </div>
 </div>
 
-<script>
+<!-- Модальное окно для удаления сообщения -->
+<div id="deleteConfirmModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeDeleteConfirmModal()">&times;</span>
+    <h2>Удаление сообщения</h2>
+    <p>Вы уверены, что хотите удалить это сообщение?</p>
+    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+      <button id="confirmDeleteBtn" style="background-color: #6200EE;">Удалить</button>
+      <button onclick="closeDeleteConfirmModal()" style="background-color: #333333;">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+
   // Показать/скрыть поле для пароля при выборе "Приватная группа"
   document.querySelector('[name="isPrivate"]').addEventListener('change', function() {
     const passwordField = document.getElementById("passwordField");
@@ -331,11 +348,10 @@
   }
 
   let socket;
-  let lastUsername = null;
   let currentGroupId = null;
 
   function connectWebSocket(groupId) {
-    //socket = new WebSocket("ws://46.16.36.171:8080/server");
+   // socket = new WebSocket("ws://46.16.36.171:8080/server");
     socket = new WebSocket("ws://localhost:8080/server");
     currentGroupId = groupId
 
@@ -347,25 +363,80 @@
     };
 
     socket.onmessage = function(event) {
-      const message = event.data;
-      const chatArea = document.getElementById("chatArea");
+      try {
+        const message = JSON.parse(event.data);
 
-      const separatorIndex = message.indexOf(':');
-      const username = message.substring(0, separatorIndex);
-      const text = message.substring(separatorIndex + 1).trim();
+        // Обработка удаления сообщения
+        if (message.type === 'delete') {
+          const messageElement = document.querySelector(`[data-message-id="${message.messageId}"]`);
+          if (messageElement) {
+            messageElement.remove();
+          }
+          return;
+        }
 
-      const tabl = "  ";
+        const chatArea = document.getElementById("chatArea");
+        const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+        const isCurrentUser = message.username === currentUser;
 
-      let formattedMessage;
-      if (username === lastUsername) {
-        formattedMessage = `${tabl}${text}\n`;
-      } else {
-        formattedMessage = `<span class="username">${username}:</span>\n${tabl}${text}\n`;
+        if (!message.id) {
+          console.warn("Получено сообщение без ID:", message);
+          return;
+        }
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+        messageDiv.dataset.messageId = message.id;
+
+        // Находим последнее сообщение от этого пользователя
+        const lastMessageFromSameUser = Array.from(chatArea.children)
+                .reverse()
+                .find(el => el.querySelector('.username')?.textContent === message.username);
+
+        // Проверяем, нужно ли показывать имя пользователя
+        const msgTime = new Date(message.timestamp || Date.now());
+        const showUsername = !lastMessageFromSameUser ||
+                (lastMessageFromSameUser &&
+                        (msgTime - new Date(lastMessageFromSameUser.querySelector('.message-time')?.textContent)) > 300000); // 5 минут
+
+        if (showUsername) {
+          const usernameDiv = document.createElement("div");
+          usernameDiv.className = "username";
+          usernameDiv.textContent = message.username;
+          messageDiv.appendChild(usernameDiv);
+        }
+
+        const bubbleDiv = document.createElement("div");
+        bubbleDiv.className = "message-bubble";
+        bubbleDiv.textContent = message.content;
+
+        const timeDiv = document.createElement("div");
+        timeDiv.className = "message-time";
+        timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+        bubbleDiv.appendChild(timeDiv);
+        messageDiv.appendChild(bubbleDiv);
+
+        if (isCurrentUser) {
+          const deleteIcon = document.createElement("div");
+          deleteIcon.className = "delete-message-icon";
+          deleteIcon.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="#888888">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+            `;
+          deleteIcon.onclick = () => {
+            deleteMessage(message.id, groupId);
+            return false;
+          };
+          messageDiv.appendChild(deleteIcon);
+        }
+
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      } catch (e) {
+        console.error("Error processing message:", e);
       }
-
-      chatArea.innerHTML += formattedMessage;
-      lastUsername = username;
-      chatArea.scrollTop = chatArea.scrollHeight;
     };
 
     socket.onclose = function() {
@@ -378,10 +449,14 @@
   }
 
   function sendMessage() {
-    const message = document.getElementById("messageInput").value;
+
+
+    const messageInput = document.getElementById("messageInput");
+    const message = messageInput.value.trim();
+
     if (message && socket && currentGroupId) {
       socket.send(currentGroupId + ":" + message);
-      document.getElementById("messageInput").value = '';
+      messageInput.value = '';
     }
   }
 
@@ -391,8 +466,165 @@
     const groupId = urlParams.get('selectedGroupId');
     if (groupId) {
       connectWebSocket(groupId);
+      loadMessages(groupId);
     }
+    document.getElementById('messageInput').focus();
   };
+
+  let messageToDelete = null;
+  let groupIdForDelete = null;
+  let isDeleteModalOpen = false;
+
+  // Функции для работы с модальным окном удаления
+
+  document.addEventListener('keydown', function(event) {
+    // Если открыто модальное окно удаления - обрабатываем Enter только для него
+    if (isDeleteModalOpen) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('confirmDeleteBtn').click();
+      }
+      return;
+    }
+
+    // Обработка Enter для отправки сообщения
+    if (event.key === 'Enter' && !isDeleteModalOpen) {
+      const activeElement = document.activeElement;
+      if (activeElement.id === 'messageInput') {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+  });
+  document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+
+  function openDeleteConfirmModal(messageId, groupId) {
+    messageToDelete = messageId;
+    groupIdForDelete = groupId;
+    isDeleteModalOpen = true;
+    document.getElementById("deleteConfirmModal").style.display = "block";
+    document.getElementById('confirmDeleteBtn').focus();
+  }
+
+  function closeDeleteConfirmModal() {
+    document.getElementById("deleteConfirmModal").style.display = "none";
+    messageToDelete = null;
+    groupIdForDelete = null;
+    isDeleteModalOpen = false;
+    document.getElementById('messageInput').focus();
+  }
+
+  function confirmDelete() {
+    if (messageToDelete && groupIdForDelete) {
+      performDelete(messageToDelete, groupIdForDelete);
+    }
+    closeDeleteConfirmModal();
+  }
+
+  function deleteMessage(messageId, groupId) {
+    if (!messageId) {
+      console.error("Не удалось удалить сообщение: отсутствует ID");
+      return;
+    }
+    openDeleteConfirmModal(messageId, groupId);
+  }
+
+  function performDelete(messageId, groupId) {
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+    fetch(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        [csrfHeader]: csrfToken
+      },
+      credentials: 'include'
+    })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => { throw err; });
+              }
+              if (socket) {
+                const deleteCommand = {
+                  type: 'delete',
+                  messageId: messageId,
+                  groupId: groupId
+                };
+                socket.send(JSON.stringify(deleteCommand));
+              }
+            })
+            .catch(error => {
+              console.error("Ошибка при удалении сообщения:", error);
+              alert("Ошибка при удалении: " + (error.message || 'Неизвестная ошибка'));
+            });
+  }
+
+  function loadMessages(groupId) {
+    fetch(`/api/messages?groupId=${groupId}`)
+            .then(response => response.json())
+            .then(messages => {
+              const chatArea = document.getElementById("chatArea");
+              chatArea.innerHTML = '';
+
+              let lastUsername = null;
+              let lastMessageTime = null;
+              const currentUser = /*[[${#authentication.principal.username}]]*/ "";
+
+              messages.forEach(msg => {
+                const isCurrentUser = msg.username === currentUser;
+                const messageDiv = document.createElement("div");
+                messageDiv.className = `message-container ${isCurrentUser ? 'my-message' : 'other-message'}`;
+                messageDiv.dataset.messageId = msg.id;
+
+                // Проверяем, нужно ли показывать имя пользователя
+                const msgTime = new Date(msg.timestamp);
+                const showUsername = lastUsername !== msg.username ||
+                        (lastMessageTime && (msgTime - lastMessageTime) > 300000); // 5 минут
+
+                if (showUsername) {
+                  const usernameDiv = document.createElement("div");
+                  usernameDiv.className = "username";
+                  usernameDiv.textContent = msg.username;
+                  messageDiv.appendChild(usernameDiv);
+                }
+
+                lastUsername = msg.username;
+                lastMessageTime = msgTime;
+
+                const bubbleDiv = document.createElement("div");
+                bubbleDiv.className = "message-bubble";
+                bubbleDiv.textContent = msg.content;
+
+                const timeDiv = document.createElement("div");
+                timeDiv.className = "message-time";
+                timeDiv.textContent = `${msgTime.getHours().toString().padStart(2, '0')}:${msgTime.getMinutes().toString().padStart(2, '0')}`;
+
+                bubbleDiv.appendChild(timeDiv);
+                messageDiv.appendChild(bubbleDiv);
+
+                if (isCurrentUser) {
+                  const deleteIcon = document.createElement("div");
+                  deleteIcon.className = "delete-message-icon";
+                  deleteIcon.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="#888888">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    `;
+                  deleteIcon.onclick = () => {
+                    deleteMessage(msg.id, groupId);
+                    return false;
+                  };
+                  messageDiv.appendChild(deleteIcon);
+                }
+
+                chatArea.appendChild(messageDiv);
+              });
+
+              chatArea.scrollTop = chatArea.scrollHeight;
+            });
+  }
+
 </script>
 </body>
 </html>

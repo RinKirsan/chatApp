@@ -2,6 +2,7 @@ package rk.chatApp.controller;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import rk.chatApp.model.Group;
+import rk.chatApp.model.Message;
 import rk.chatApp.model.User;
 import rk.chatApp.repository.UserRepository;
 import rk.chatApp.service.GroupService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 public class ChatController {
@@ -26,7 +28,7 @@ public class ChatController {
 
     @GetMapping("/chat")
     public String chatPage(@AuthenticationPrincipal User user,
-                           @RequestParam(required = false) Long selectedGroupId, // Добавляем параметр для выбранной группы
+                           @RequestParam(required = false) Long selectedGroupId,
                            Model model) {
         // Получаем список групп пользователя
         var userGroups = groupService.getGroupsByUser(user);
@@ -38,7 +40,9 @@ public class ChatController {
         if (selectedGroupId != null) {
             Group selectedGroup = groupService.getGroupById(selectedGroupId)
                     .orElseThrow(() -> new RuntimeException("Группа не найдена"));
+            List<Message> messages = groupService.getMessagesForGroup(selectedGroupId);
             model.addAttribute("selectedGroup", selectedGroup);
+            model.addAttribute("messages", messages);
         }
 
         model.addAttribute("userGroups", userGroups);
