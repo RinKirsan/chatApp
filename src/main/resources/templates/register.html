@@ -7,7 +7,6 @@
 <body>
 <h1>Регистрация</h1>
 
-<!-- Форма регистрации -->
 <form th:action="@{/register}" method="post">
     <div>
         <label for="username">Имя пользователя:</label>
@@ -21,5 +20,9 @@
         <button type="submit">Зарегистрироваться</button>
     </div>
 </form>
+
+<div class="return-home">
+    <a th:href="@{/}" class="home-button">Вернуться на главную</a>
+</div>
 </body>
 </html>

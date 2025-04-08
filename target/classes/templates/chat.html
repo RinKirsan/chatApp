@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/css/chat_style.css">
 </head>
 <body>
+<a href="/" class="back-button">← Вернуться</a>
 <!-- Контейнер для всех элементов -->
 <div class="group-list">
   <!-- Список групп пользователя -->
@@ -128,8 +129,8 @@
   let currentGroupId = null;
 
   function connectWebSocket(groupId) {
-    socket = new WebSocket("ws://46.16.36.171:8080/server");
-    //socket = new WebSocket("ws://localhost:8080/server");
+   // socket = new WebSocket("ws://46.16.36.171:8080/server");
+    socket = new WebSocket("ws://localhost:8080/server");
     currentGroupId = groupId
 
     socket.onopen = function() {
