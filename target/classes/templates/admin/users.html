@@ -3,10 +3,28 @@
 <head>
   <title>Admin Panel - Users</title>
   <link rel="stylesheet" href="/css/admin-users_style.css">
+  <style>
+    .button-link {
+      background-color: #6200EE;
+      color: #E0E0E0;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .button-link:hover {
+      background-color: #BB86FC;
+    }
+  </style>
 </head>
 <body>
+<a th:href="@{/home}" class="button-link">На главную</a>
 
 <h1>Users</h1>
+
+
 
 <!-- Поле для поиска по Username -->
 <input type="text" id="searchUsername" onkeyup="filterUsers()" placeholder="Search by Username" class="search-input">

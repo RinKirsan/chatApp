@@ -24,6 +24,9 @@ a:hover {
     text-decoration: underline;
 }
 
+.username {
+      color: #03DAC5;
+    }
 
 .group-list {
     width: 300px;
@@ -74,6 +77,20 @@ a:hover {
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.button-link {
+      background-color: #6200EE;
+      color: #E0E0E0;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+}
+
+.button-link:hover {
+      background-color: #BB86FC;
 }
 
 .close {
