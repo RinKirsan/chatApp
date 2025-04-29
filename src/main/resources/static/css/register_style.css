@@ -13,6 +13,17 @@ h1 {
     margin-top: 50px;
 }
 
+/* Стили для сообщения об ошибке */
+.error-message {
+    color: #FF5C5C;
+    background-color: rgba(255, 92, 92, 0.1);
+    padding: 10px;
+    margin: 20px auto;
+    width: 300px;
+    border-radius: 4px;
+    border: 1px solid #FF5C5C;
+}
+
 /* Контейнер для формы регистрации */
 form {
     background-color: #1F1F1F;

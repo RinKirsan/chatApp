@@ -18,6 +18,12 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public void registerUser(String username, String password, String role) {
+        // Проверяем, существует ли пользователь с таким именем
+        User existingUser = userRepository.findByUsername(username);
+        if (existingUser != null) {
+            throw new IllegalArgumentException("Пользователь с таким именем уже существует");
+        }
+
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
